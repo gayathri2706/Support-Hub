@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Support Hub{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="icon" href="{{ url_for('static', filename='images/support.png') }}" type="image/png">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar
+        <div class="sidebar bg-dark text-white p-3 vh-100">
+            <nav class="mt-4">
+                <div class="text-center mb-3" style="margin-top: -30px; margin-left: -6px">
+                    <img src="{{ url_for('static', filename='images/sandman.png') }}" alt="SandMan Logo" 
+                         style="max-width: 200px;">
+                </div>
+                <a href="/" class="d-flex align-items-center text-decoration-none text-white py-2">
+                    <img src="{{ url_for('static', filename='images/support-white.png') }}" 
+                         alt="Support Hub Logo" class="me-2" style="width: 30px; height: 30px;">
+                    <span>Support Hub</span>
+                </a></nav>
+        </div> -->
+        
+        <!-- Main Content -->
+        <div class="content p-4 flex-grow-1">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+
+    <!-- Footer
+    <footer class="footer bg-dark ">
+        &copy; 2025 SandMan Inc.
+    </footer>
+    /* Footer fixed at bottom
+    .footer {
+        position: fixed; /* Use absolute to position it at the bottom */
+        bottom: 0;
+        width: 100%;
+        color: white;
+        text-align: center;
+        padding: 5px;
+        font-size: 10px;
+        background-color: #2c3e50; /* Consistent background color */
+    }  
+    */ -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3><strong>Manage Case Types</strong></h3>
+
+    <!-- Case Type List -->
+    <ul id="caseTypeList" class="list-group">
+        <!-- Case types will be dynamically inserted here -->
+    </ul>
+
+    <!-- Add New Case Type -->
+    <div class="input-group mt-3">
+        <input type="text" id="newCaseType" class="form-control" placeholder="Enter new case type">
+        <button class="btn btn-success" onclick="addCaseType()">ADD NEW</button>
+
+    </div>
+    <div id="caseTypeError" class="text-danger mt-2" style="display: none;"></div>
+
+    <a href="http://127.0.0.1:5000/?user=admin#" class="btn btn-secondary">Back</a>
+
+</div>
+
+<script>
+
+// Fetch and display case types from backend
+
+function fetchCaseTypes() {
+    fetch('/api/case-types')
+    .then(response => response.json())
+    .then(caseTypes => {
+        const caseTypeList = document.getElementById("caseTypeList");
+        caseTypeList.innerHTML = ""; // Clear old data
+
+                caseTypes.forEach(caseType => {
+                    const listItem = document.createElement("li");
+                    listItem.className = "list-group-item d-flex justify-content-between align-items-center";
+                    listItem.dataset.id = caseType.id;
+                    listItem.innerHTML = `
+                        <span class="case-type-name">${caseType.name}</span>
+                        <div>
+                            <button class="btn btn-sm btn-warning me-1" onclick="editCaseType(${caseType.id}, '${caseType.name}')">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCaseType(${caseType.id}, '${caseType.name}')">Delete</button>
+                        </div>
+                    `;
+                    caseTypeList.appendChild(listItem);
+                });
+            })
+            .catch(error => console.error("Error fetching case types:", error));
+    }
+
+    function addCaseType() {
+        const newCaseType = document.getElementById("newCaseType").value.trim();
+        if (!newCaseType) {
+            alert("Please enter a case type.");
+            return;
+        }
+
+        fetch('/api/case-types/add', {
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ name: newCaseType }) 
+            })
+
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error); // Show error if case type already exists
+            } else {
+                alert("Case type added successfully!");
+                location.reload(); // Refresh page to update the list
+            }
+        })
+        .catch(error => console.error('Error adding case type:', error));
+    }
+
+    // Edit a case type
+    function editCaseType(caseTypeId, currentName) {
+        const newName = prompt("Edit case type name:", currentName);
+        if (!newName || newName.trim() === currentName) return;
+
+        fetch(`/api/case-types/${caseTypeId}`, { 
+            method: 'PUT', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ name: newName.trim() }) 
+        })
+
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError(data.error);
+            } else {
+                hideError();
+                fetchCaseTypes();
+            }
+        })
+        .catch(error => console.error("Error editing case type:", error));
+    }
+
+    // Delete a case type
+    function deleteCaseType(caseTypeId, name) {
+        if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+
+        fetch(`/api/case-types/${caseTypeId}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                fetchCaseTypes();
+            } else {
+                showError(data.error);
+            }
+        })
+        .catch(error => console.error("Error deleting case type:", error));
+    }
+
+    function showError(message) {
+        const errorDiv = document.getElementById("caseTypeError");
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+    }
+
+    function hideError() {
+        document.getElementById("caseTypeError").style.display = "none";
+    }
+
+    fetchCaseTypes(); // Load case types when the page loads
+    
+    </script>
+    
+{% endblock %}

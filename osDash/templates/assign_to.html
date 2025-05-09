@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header-container justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-1">
+        <h3 class="mb-0"><strong>Manage Assign To</strong></h3>
+        
+    </div>
+       <!-- Save Admin Status -->
+       <a href="http://127.0.0.1:5000/?user=admin#" class="btn btn-secondary">Back</a>
+
+</div>
+<div class="container mt-4">
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Edit</th>
+                <th>Admin</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody id="assignToList">
+            <!-- Assignees will be dynamically inserted here -->
+        </tbody>
+    </table>
+
+    <!-- Add New Assignee -->
+    <div class="input-group row gap-2 mt-4">
+        <input type="text" id="newAssigneeName" class="form-control" placeholder="Enter name">
+        <input type="email" id="newAssigneeEmail" class="form-control" placeholder="Enter email">
+        <button class="btn btn-success" onclick="addAssignee()">Add</button>
+    </div>
+
+    <div id="assignToError" class="text-danger mt-2" style="display: none;"></div>
+</div>
+
+<script>
+    function fetchAssignees() {
+        fetch('/api/assign-to')
+            .then(response => response.json())
+            .then(assignees => {
+                const assignToList = document.getElementById("assignToList");
+                assignToList.innerHTML = "";
+
+                assignees.forEach(assignee => {
+                    const row = document.createElement("tr");
+                    row.dataset.id = assignee.id;
+
+                    row.innerHTML = `
+                        <td>${assignee.name}</td>
+                        <td>${assignee.email}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editAssignee(${assignee.id}, '${assignee.name}', '${assignee.email}')">Edit</button>
+                        </td>
+                        <td>
+                            <input type="checkbox" class="admin-checkbox" data-id="${assignee.id}" ${assignee.is_admin ? "checked" : ""} onclick="toggleAdmin(${assignee.id}, this.checked)">
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="deleteAssignee(${assignee.id}, '${assignee.name}')">Delete</button>
+                        </td>
+                    `;
+                    assignToList.appendChild(row);
+                });
+            })
+        .catch(error => console.error("Error fetching assignees:", error));
+    }
+
+    function addAssignee() {
+        const newName = document.getElementById("newAssigneeName").value.trim();
+        const newEmail = document.getElementById("newAssigneeEmail").value.trim();
+
+        if (!newName || !newEmail) {
+            alert("Please enter both name and email.");
+            return;
+        }
+
+        fetch('/api/assign-to/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName, email: newEmail })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                alert("Assignee added successfully!");
+                fetchAssignees();
+            }
+        })
+        .catch(error => console.error('Error adding assignee:', error));
+    }
+
+    function editAssignee(assigneeId, currentName, currentEmail) {
+        const newName = prompt("Edit name:", currentName);
+        const newEmail = prompt("Edit email:", currentEmail);
+        if (!newName || !newEmail) return;
+
+        fetch(`/api/assign-to/${assigneeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName.trim(), email: newEmail.trim() })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                alert("Assignee updated successfully!");
+                fetchAssignees();
+            }
+        })
+        .catch(error => console.error("Error editing assignee:", error));
+    }
+
+    function deleteAssignee(assigneeId, name) {
+        if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+
+        fetch(`/api/assign-to/${assigneeId}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                fetchAssignees();
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => console.error("Error deleting assignee:", error));
+    }
+
+    function toggleAdmin(assigneeId, isChecked) {
+        fetch(`/api/assign-to/admin/${assigneeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_admin: isChecked })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(isChecked ? "Added to Admin" : "Removed as Admin", "success");
+            } else {
+                showToast("Error updating admin status: " + data.message, "error");
+            }
+        })
+        .catch(error => console.error("Error updating admin status:", error));
+    }
+
+    function saveAdminStatus() {
+        const updates = [];
+        document.querySelectorAll('.admin-checkbox').forEach(checkbox => {
+            updates.push({
+                id: checkbox.dataset.id,
+                is_admin: checkbox.checked
+            });
+        });
+
+        fetch('/api/assign-to/update-admin-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast("Admin changes saved successfully!", "success");
+            } else {
+                showToast("Error updating admin status: " + data.message, "error");
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+
+    function showToast(message, type) {
+        const toast = document.createElement("div");
+        toast.className = `toast-message ${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add("fade-out");
+            setTimeout(() => {
+                toast.remove();
+            }, 500);
+        }, 2000);
+    }
+
+
+
+    fetchAssignees();
+</script>
+
+{% endblock %}

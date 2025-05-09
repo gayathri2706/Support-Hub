@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+    
+{% block content %}
+<div class="container mt-4">
+    <h4 class="mb-3"><strong>Manage Foundries & Users</strong></h4>
+
+    <!-- Foundry Selection & Add Foundry Button -->
+    <div class="d-flex align-items-center mb-3">
+        <label for="foundryDropdown" class="form-label me-2"><strong>Select Foundry:</strong></label>
+        <select id="foundryDropdown" class="form-select w-50 me-2" onchange="loadFoundryDetails()">
+            <option value="">-- Select Foundry --</option>
+        </select>
+        <button class="btn btn-success" onclick="toggleSection('addFoundryForm')">+ Add Foundry</button>
+    </div>
+
+    <!-- Add Foundry Form (Initially Hidden) -->
+    <div id="addFoundryForm" class="mt-3 p-3 border rounded bg-light" style="display: none; width: 60%;">
+        <h5>Add New Foundry</h5>
+        <form id="foundryForm">
+            <div class="mb-3">
+                <label for="foundryName" class="form-label">Foundry Name:</label>
+                <input type="text" id="foundryName" class="form-control form-control-lg" required>
+            </div>
+            <h6>Users for this Foundry:</h6>
+            <div id="userList">
+                <div class="user-entry">
+                    <input type="text" class="form-control mb-2 form-control-lg" placeholder="User Name" required>
+                    <input type="email" class="form-control mb-2 form-control-lg" placeholder="User Email" required>
+                    <input type="text" class="form-control mb-2 form-control-lg" placeholder="User Phone (Optional)">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeUserEntry(this)">Remove</button>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary mt-2" onclick="addUserEntry()">+ Add Another User</button>
+            <button type="submit" class="btn btn-success mt-2">Add Foundry</button>
+            <button type="button" class="btn btn-danger mt-2" onclick="toggleSection('foundryDetails')">Cancel</button>
+        </form>
+    </div>
+
+    <!-- User Table -->
+    <div id="foundryDetails" style="display: block;">
+        <h5 class="mt-3"><strong>Users in Foundry</strong></h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone Number</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody id="foundryTableBody"></tbody>
+        </table>
+    </div>
+
+   <!-- Button to Show Add User Form -->
+   <button id="showUserFormBtn" class="btn btn-primary mt-3" onclick="toggleSection('newUserForm')" style="display: none;">+ Add User</button>
+
+   <!-- Add User Form (Hidden Initially) -->
+   <div id="newUserForm" class="mt-4 p-3 border rounded bg-light" style="display: none; width: 50%;">
+       <h5>Add New User</h5>
+       <form id="userForm">
+           <div class="mb-3">
+               <label for="userName" class="form-label">Name:</label>
+               <input type="text" id="userName" class="form-control form-control-lg" required>
+           </div>
+           <div class="mb-3">
+               <label for="userEmail" class="form-label">Email:</label>
+               <input type="email" id="userEmail" class="form-control form-control-lg" required>
+           </div>
+           <div class="mb-3">
+               <label for="userPhone" class="form-label">Phone:</label>
+               <input type="text" id="userPhone" class="form-control mb-2 form-control-lg" placeholder="User Phone (Optional)">
+           </div>
+           <button type="submit" class="btn btn-success">Add User</button>
+           <button type="button" class="btn btn-secondary" onclick="toggleSection('foundryDetails')">Cancel</button>
+       </form>
+   </div>
+
+    <!-- Back Button -->
+    <a href="http://127.0.0.1:5000/?user=admin#" class="btn btn-secondary">Back</a>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        loadFoundryDropdown();
+        document.getElementById("userForm").addEventListener("submit", addNewUserToFoundry);
+        document.getElementById("foundryForm").addEventListener("submit", addNewFoundry);
+    });
+
+    function loadFoundryDropdown() {
+        fetch("/api/foundries")
+            .then(response => response.json())
+            .then(data => {
+                const dropdown = document.getElementById("foundryDropdown");
+                dropdown.innerHTML = '<option value="">-- Select Foundry --</option>';
+                data.forEach(foundry => {
+                    dropdown.innerHTML += `<option value="${foundry}">${foundry}</option>`;
+                });
+            });
+    }
+
+    function toggleUserForm() {
+        document.getElementById("newUserForm").style.display = "block";
+    }
+
+    function resetAndHideUserForm() {
+        document.getElementById("userForm").reset();
+        document.getElementById("newUserForm").style.display = "none";
+    }
+
+    function addNewFoundry(event) {
+    event.preventDefault();
+    const foundryName = document.getElementById("foundryName").value.trim();
+    const userList = document.querySelectorAll("#userList .user-entry");
+    let users = [];
+
+    userList.forEach(entry => {
+        const inputs = entry.querySelectorAll("input");
+        users.push({
+            name: inputs[0].value.trim(),
+            email: inputs[1].value.trim(),
+            phone: inputs[2].value.trim() || null // ✅ Set to null if empty
+        });
+    });
+
+    console.log("Submitting Foundry:", { foundry_name: foundryName, users }); // Debugging
+
+    fetch("/api/foundry/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ foundry_name: foundryName, users })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Response:", data); // Debugging
+        if (data.success) {
+            alert("Foundry added successfully!");
+            document.getElementById("foundryForm").reset();
+            loadFoundryDropdown();
+        } else {
+            alert("Error: " + data.error);
+        }
+    })
+    .catch(error => console.error("Error adding foundry:", error));
+}
+function addNewUserToFoundry(event) {
+    event.preventDefault();
+    const foundry = document.getElementById("foundryDropdown").value.trim();
+    const name = document.getElementById("userName").value.trim();
+    const email = document.getElementById("userEmail").value.trim();
+    const phone = document.getElementById("userPhone").value.trim() || null; // ✅ Set to null if empty
+
+    if (!foundry || !name || !email) {
+        alert("Foundry, Name, and Email are required!");
+        return;
+    }
+
+    console.log("Submitting User:", { foundry, name, email, phone }); // Debugging
+
+    fetch("/api/foundry/user/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ foundry, name, email, phone })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Response:", data); // Debugging
+        if (data.success) {
+            alert("User added successfully!");
+            document.getElementById("userForm").reset();
+            loadFoundryDetails();
+        } else {
+            alert("Error: " + data.error);
+        }
+    })
+    .catch(error => console.error("Error adding user:", error));
+}
+    function loadFoundryDetails() {
+        const foundry = document.getElementById("foundryDropdown").value;
+        const detailsSection = document.getElementById("foundryDetails");
+        const tableBody = document.getElementById("foundryTableBody");
+
+            if (!foundry) {
+                detailsSection.style.display = "none";
+                document.getElementById("newUserForm").style.display = "none";
+                return;
+            }
+
+            fetch(`/api/foundry/details/${foundry}`)
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = "";
+                    if (data.error) {
+                        alert(data.error);
+                        detailsSection.style.display = "none";
+                        document.getElementById("newUserForm").style.display = "none";
+                        return;
+                    }
+
+                    if (data.names && data.names.length > 0) {
+                        data.names.forEach(user => {
+                            const row = `
+                                <tr id="user-${user.id}">
+                                    <td>${user.name}</td>
+                                    <td>${user.email}</td>
+                                    <td>${user.phone}</td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm" onclick="editEntry(${user.id}, '${user.name}', '${user.email}', '${user.phone}')">Edit</button>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteEntry(${user.id})">Delete</button>
+                                    </td>
+                                </tr>`;
+                            tableBody.innerHTML += row;
+                        });
+                    } else {
+                        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No users found.</td></tr>`;
+                    }
+
+                    detailsSection.style.display = "block";
+                    document.getElementById("showUserFormBtn").style.display = "block";
+                    resetAndHideUserForm();
+                })
+                .catch(error => console.error("Error loading foundry details:", error));
+        }
+
+        function toggleSection(sectionId) {
+        // Hide all sections
+        document.getElementById("foundryDetails").style.display = "none";
+        document.getElementById("addFoundryForm").style.display = "none";
+        document.getElementById("newUserForm").style.display = "none";
+
+        // Show the selected section
+        document.getElementById(sectionId).style.display = "block";
+    }
+
+    function addUserEntry() {
+        const newEntry = document.querySelector(".user-entry").cloneNode(true);
+        newEntry.querySelectorAll("input").forEach(input => input.value = "");
+        document.getElementById("userList").appendChild(newEntry);
+    }
+
+    function removeUserEntry(button) {
+        if (document.querySelectorAll("#userList .user-entry").length > 1) {
+            button.parentElement.remove();
+        }
+    }
+
+    // ✅ Add a User to an Existing Foundry (Fixed)
+    function addNewUserToFoundry(event) {
+        event.preventDefault();
+        const foundry = document.getElementById("foundryDropdown").value;
+        const name = document.getElementById("userName").value.trim();
+        const email = document.getElementById("userEmail").value.trim();
+        const phone = document.getElementById("userPhone").value.trim();
+
+        fetch(`/api/foundry/user/add`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ foundry, name, email, phone })
+        }).then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("User added successfully!");
+                document.getElementById("userForm").reset();
+                loadFoundryDetails();
+            } else {
+                alert("Error: " + data.error);
+            }
+        });
+    }
+
+    // ✅ Edit User in Foundry (Fixed)
+    function editEntry(id, currentName, currentEmail, currentPhone) {
+        const newName = prompt("Edit Name:", currentName);
+        const newEmail = prompt("Edit Email:", currentEmail);
+        const newPhone = prompt("Edit Phone:", currentPhone);
+
+        if (!newName || !newEmail || !newPhone) {
+            alert("All fields are required.");
+            return;
+        }
+
+        fetch(`/api/foundry/user/edit/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newName, email: newEmail, phone: newPhone })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("User updated successfully!");
+                loadFoundryDetails();
+            } else {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(error => console.error("Error editing user:", error));
+    }
+
+    // ✅ Delete User from Foundry (Fixed)
+    function deleteEntry(id) {
+        if (!confirm("Are you sure you want to delete this user?")) return;
+
+        fetch(`/api/foundry/user/delete/${id}`, { method: "DELETE" })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`user-${id}`).remove();
+                alert("User deleted successfully!");
+            } else {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(error => console.error("Error deleting user:", error));
+    }
+
+    function toggleAddFoundryForm() {
+        document.getElementById("newFoundryForm").style.display = 
+            document.getElementById("newFoundryForm").style.display === "none" ? "block" : "none";
+    }
+</script>
+
+{% endblock %}
+    

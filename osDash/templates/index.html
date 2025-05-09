@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header-container justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-2">
+        <h4 class="mb-0"><strong>Support Hub</strong></h4>
+        {% if current_user.username == "admin" %}
+            <a href="/case-types" class="btn" title="Manage Case Types">
+                <i class="bi bi-gear-fill"></i>
+            </a>
+            <a href="/assign-to" class="btn" title="Manage Assign To">
+                <i class="bi bi-person-fill-gear"></i>
+            </a>
+            <a href="/user-management" class="btn" title="User Management">
+                <i class="bi bi-people-fill"></i>
+            </a>
+            
+        {% endif %}
+    </div>
+    {% if current_user and current_user.is_admin %}
+        <a href="/dashboard?user={{ current_user.username }}" class="btn btn-primary">Dashboard</a>
+    {% endif %}
+
+
+</div>
+
+<!-- Line Separator -->
+<hr class="header-divider">
+
+<!-- Welcome Section -->
+<div class="welcome-section">
+    <h5 class="text-dark">Hello User, how can we help you?</h5>
+    <p><em>Your one-stop solution for all your needs. Find answers, troubleshoot issues, and explore guides.</em></p>
+</div>
+
+
+<!-- My Tickets Section -->
+<h4><strong>My Tickets</strong></h4>
+<div class="my-tickets bg-white p-4 rounded border border-dark">
+    <!-- Filters & Open Ticket Button (Side-by-Side) -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <!-- Left Side - Filters -->
+        <div class="d-flex gap-2">
+            <select id="foundryFilter" class="form-select" style="width: 180px;">
+                {% for foundry in foundries %}
+                    <option value="{{ foundry }}">{{ foundry }}</option>
+                {% endfor %}
+            </select>
+
+            <select id="statusFilter" class="form-select" style="width: 150px;">
+                <option value="" selected>All Status</option>
+                <option value="Open">Open</option>
+                <option value="Closed">Closed</option>
+            </select>
+
+            <input type="text" id="searchBar" class="form-control" placeholder="Search..." style="width: 220px;">
+        </div>
+
+        <!-- Right Side - Need Assistance & Open Ticket -->
+        <div class="d-flex flex-column align-items-start gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <h5 class="mb-0">Need Assistance?</h5>
+            </div>
+            <small class="text-muted"><em>Fill the form here, we will get back to you within 24 hours.</em></small>
+        </div>
+
+        <a href="#" id="openTicketButton" class="btn btn-danger">Open Ticket</a>
+
+              </div>
+
+    <!-- Tickets Table -->
+    <div class="table-container">
+        <table class="table table-striped border">
+            <thead>
+                <tr>
+                    <th><strong>Ticket ID</strong></th>
+                    <th><strong>Date Created</strong></th>
+                    <th><strong>Foundry</strong></th>
+                    <th><strong>Case Type</strong></th>
+                    <th><strong>Description</strong></th>
+                    <th><strong>Priority</strong></th>
+                    <th><strong>Status</strong></th>
+                    <th><strong>Resolved Date</strong></th>
+                    <th><strong>Actions/</strong></th> <!-- Action column -->
+                </tr>
+            </thead>
+            <tbody id="ticketsTable">
+                {% for ticket in tickets %}
+                <tr data-ticket-id="{{ ticket.ticket_id }}" data-foundry="{{ ticket.foundry_name }}" data-status="{{ ticket.status }}">
+                    <td>{{ ticket.ticket_id }}</td>
+                    <td>{{ ticket.date_created.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ ticket.foundry_name }}</td>
+                    <td>{{ ticket.issue }}</td>
+                    <td>{{ ticket.issue_description }}</td>
+                    <td class="priority-column">
+                        <span id="priority-{{ ticket.ticket_id }}" class="priority-badge" data-priority="{{ ticket.priority }}">
+                            {{ ticket.priority }}
+                        </span>
+                    </td>
+                    <td class="status-column">
+                        <span id="status-{{ ticket.ticket_id }}" class="status-badge" data-status="{{ ticket.status }}">
+                            {{ ticket.status }}
+                        </span>
+                    </td>                    
+                    <td>{{ ticket.resolved_time or 'N/A' }}</td>
+                    <td class="actions-column text-center">
+                        <div class="d-flex justify-content-center align-items-center gap-2">
+                            <!-- Show Comments Button -->
+                            <button class="btn btn-sm btn-outline-dark"
+                                    onclick="toggleComments('{{ ticket.ticket_id }}')" 
+                                    {% if ticket.status != 'Closed' %}disabled{% endif %}>
+                                <i class="bi bi-chat-dots-fill" title="Comments"></i>
+                            </button>
+                    
+                            <!-- Resolved File Section -->
+                            {% if ticket.resolved_file %}
+                                <!-- Download Resolved File -->
+                                <a href="/api/tickets/{{ ticket.ticket_id }}/file" download class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-download" title="Download Resolved File"></i>
+                                </a>
+                            {% endif %}
+                    
+                            <!-- Feedback Button -->
+                            <button class="btn btn-primary btn-sm"
+                                    onclick="openFeedbackModal('{{ ticket.ticket_id }}', '{{ ticket.name }}', '{{ ticket.email }}')" 
+                                    {% if ticket.status != 'Closed' %}disabled{% endif %}>
+                                <i class="bi bi-chat-square-text-fill" title="Feedback"></i>
+                            </button>
+                        </div>
+                    </td>                      
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <!-- Pagination -->
+    <div class="pagination-container d-flex justify-content-center align-items-center mt-2 mb-0">
+        <button id="firstPage" class="btn btn-sm btn-dark me-2">⏮</button>
+        <button id="prevPage" class="btn btn-sm btn-dark me-2">◀</button>
+        <span id="paginationInfo" class="mx-3"></span>
+        <button id="nextPage" class="btn btn-sm btn-dark me-2">▶</button>
+        <button id="lastPage" class="btn btn-sm btn-dark me-2">⏭</button>
+    </div>
+</div>
+
+<!-- Contact Us Section -->
+<div class="contact-us">
+    <div>
+        <h4><strong>Contact Us</strong></h4>
+        <p>Have any questions? Feel free to reach out, and we'll get back to you as soon as possible! Email ID: 
+            <a href="mailto:support@mpminfosoft.com">support@mpminfosoft.com</a>
+        </p>
+    </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="modal-overlay" onclick="closeFeedbackModal()"></div>
+<div class="feedback-modal rounded p-4 bg-light">
+    <h2 class="text-primary">Customer Feedback</h2>
+    <form id="feedback-form" method="POST" action="/send-feedback">
+        <div class="mb-3">
+            <label for="name" class="form-label">Your name:</label>
+            <input type="text" id="name" name="name" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Your email:</label>
+            <input type="email" id="email" name="email" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="ticket_id" class="form-label">Ticket ID:</label>
+            <input type="text" id="ticket_id" name="ticket_id" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="experience" class="form-label">Experience/Comments:</label>
+            <textarea id="experience" name="experience" class="form-control" required></textarea>
+        </div> 
+        <button type="submit" class="btn btn-primary w-100">Submit</button>
+        <button type="button" class="btn btn-secondary w-100 mt-2" onclick="closeFeedbackModal()">Cancel</button>
+        <div id="feedback-error" class="text-danger" style="display: none;">Failed to send feedback. Try again later.</div>
+    </form>
+</div>
+<script>
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        applyFilters();
+    });
+
+    // **Pagination Variables**
+    const rowsPerPage = 4; // Show only 4 records per page
+    let currentPage = 1;
+    let totalRows = 0;
+
+    // **Apply Filters and Update Pagination**
+    function applyFilters() {
+        const foundryFilter = document.getElementById('foundryFilter').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+        const searchQuery = document.getElementById('searchBar').value.toLowerCase();
+
+        const rows = document.querySelectorAll('#ticketsTable tr');
+        totalRows = 0; // Reset row count
+
+        rows.forEach(row => {
+            if (row.classList.contains("comment-row")) {
+                return; // Ignore comment rows
+            }
+            const foundry = row.getAttribute('data-foundry').toLowerCase();
+            const status = row.getAttribute('data-status').toLowerCase();
+            const rowText = row.textContent.toLowerCase();
+
+            if ((foundryFilter === "" || foundry === foundryFilter) &&
+                (statusFilter === "" || status === statusFilter) &&
+                (searchQuery === "" || rowText.includes(searchQuery))) {
+                row.setAttribute("data-visible", "true"); // Mark as visible
+                totalRows++;
+            } else {
+                row.setAttribute("data-visible", "false"); // Hide row
+            }
+        });
+
+        currentPage = 1; // Reset to first page after filtering
+        updatePagination();
+    }
+
+    // **Pagination Function**
+    function updatePagination() {
+        const rows = document.querySelectorAll('#ticketsTable tr');
+        const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+        if (currentPage > totalPages) {
+            currentPage = totalPages || 1;
+        }
+
+        let visibleIndex = 0;
+
+        rows.forEach(row => {
+            if (row.getAttribute("data-visible") === "true") {
+                if (visibleIndex >= (currentPage - 1) * rowsPerPage && visibleIndex < currentPage * rowsPerPage) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+                visibleIndex++;
+            } else {
+                row.style.display = "none"; // Ensure hidden rows remain hidden
+            }
+        });
+
+        document.getElementById('paginationInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+    }
+
+
+    document.getElementById('firstPage').addEventListener('click', () => {
+        currentPage = 1;
+        updatePagination();
+    });
+
+    document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            updatePagination();
+        }
+    });
+
+    document.getElementById('nextPage').addEventListener('click', () => {
+        const totalPages = Math.ceil(totalRows / rowsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            updatePagination();
+        }
+    });
+
+    document.getElementById('lastPage').addEventListener('click', () => {
+        currentPage = Math.ceil(totalRows / rowsPerPage);
+        updatePagination();
+    });
+
+    // **Ensure Filters and Pagination Work Together**
+    document.getElementById('foundryFilter').addEventListener('change', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('searchBar').addEventListener('input', applyFilters);
+
+    // Initialize pagination on page load
+    updatePagination();
+
+
+    document.getElementById('openTicketButton').addEventListener('click', () => {
+    const selectedFoundry = document.getElementById('foundryFilter').value;
+    const username = "{{ current_user.username }}";  // Assuming you are using Jinja to pass the username
+
+    if (selectedFoundry) {
+        // Only pass username if a user is selected, otherwise, skip it
+        const url = `/new_ticket?foundry=${encodeURIComponent(selectedFoundry)}${username ? '&username=' + encodeURIComponent(username) : ''}`;
+        window.location.href = url;
+    } else {
+        alert('Please select a foundry to create a ticket.');
+    }
+});
+
+
+    function toggleComments(ticketId) {
+        const ticketRow = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
+        const existingCommentBox = document.getElementById(`comment-box-${ticketId}`);
+
+        if (existingCommentBox) {
+            // Remove the comment box if it exists
+            existingCommentBox.remove();
+            applyFilters(); // Reapply filters after closing comments
+        } else {
+            // Create a new row for the comment box
+            const newRow = document.createElement('tr');
+            newRow.id = `comment-box-${ticketId}`;
+            newRow.classList.add('comment-row');
+            newRow.innerHTML = `
+                <td colspan="7" class="p-2">
+                <div class="comments-box border p-2 rounded text-start">Loading comments...</div>
+                </td>
+            `;
+            ticketRow.after(newRow);
+
+            // Fetch and display comments
+            fetch(`/comments/${ticketId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const commentBox = newRow.querySelector('div');
+                    commentBox.innerHTML = data.comments || 'No comments available.';
+                })
+                .catch(() => {
+                    newRow.querySelector('div').innerHTML = 'Failed to load comments.';
+                });
+        }
+    }
+
+    // Open Feedback Modal
+    function openFeedbackModal(ticketId, name, email) {
+        document.querySelector('.feedback-modal').style.display = 'block';
+        document.querySelector('.modal-overlay').style.display = 'block';
+
+        document.getElementById('ticket_id').value = ticketId;
+        document.getElementById('name').value = name;
+        document.getElementById('email').value = email;
+    }
+
+    // Close Feedback Modal
+    function closeFeedbackModal() {
+        const modal = document.querySelector('.feedback-modal');
+        const overlay = document.querySelector('.modal-overlay');
+        const form = document.getElementById('feedback-form');
+        const selectedFileName = document.getElementById('selected-file-name');
+
+        if (modal && overlay) {
+            modal.style.display = 'none';
+            overlay.style.display = 'none';
+
+            // Reset the form fields
+            if (form) {
+                form.reset();
+            }
+
+            // Hide any error messages
+            const errorElement = document.getElementById('feedback-error');
+            if (errorElement) errorElement.style.display = 'none';
+        }
+    }
+    
+    // Add an event listner for the Escape key to close the modal
+    document.addEventListner('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeFeedbackModal();
+        }
+    });
+
+    // Form Submission
+    document.getElementById('feedback-form').addEventListener('submit', async (e) => {
+        e.preventDefault(); // Prevent default form submission
+
+        const formData = new FormData(e.target); // Use FormData directly
+
+        try {
+            const response = await fetch('/send-feedback', {
+                method: 'POST',
+                body: formData, // Send as FormData
+            });
+
+            if (response.ok) {
+                alert('Feedback sent successfully!');
+                closeFeedbackModal();
+                e.target.reset();
+            } else {
+                const errorResponse = await response.json();
+                const errorElement = document.getElementById('feedback-error');
+                errorElement.textContent = errorResponse.error || 'Failed to send feedback. Try again later.';
+                errorElement.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            const errorElement = document.getElementById('feedback-error');
+            errorElement.textContent = 'An unexpected error occurred. Please try again.';
+            errorElement.style.display = 'block';
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const priorityElements = document.querySelectorAll(".priority-badge");
+        const statusElements = document.querySelectorAll(".status-badge");
+
+        // Apply colors for Priority
+        priorityElements.forEach(element => {
+            const priority = element.getAttribute("data-priority");
+
+            if (priority === "High") {
+                element.style.color = "#cc0000"; // Dark Red
+                element.style.backgroundColor = "rgba(255, 0, 0, 0.2)"; // Light Red
+            } else if (priority === "Medium") {
+                 element.style.color = "#0044cc"; // Dark Blue
+                element.style.backgroundColor = "rgba(0, 0, 255, 0.2)"; // Light Blue
+            } else if (priority === "Low") {
+                element.style.color = "#008000"; // Dark Green
+                element.style.backgroundColor = "rgba(0, 255, 0, 0.2)"; // Light Green
+            }
+        });
+
+        // Apply colors for Status
+        statusElements.forEach(element => {
+            const status = element.getAttribute("data-status");
+
+            if (status === "Open") {
+                element.style.color = "#008000"; // Dark Green
+                element.style.backgroundColor = "rgba(0, 255, 0, 0.2)"; // Light Green
+            } else if (status === "Closed") {
+                element.style.color = "#cc0000"; // Dark Red
+                element.style.backgroundColor = "rgba(255, 0, 0, 0.2)"; // Light Red
+            }
+        });
+    });
+
+    // Function to change status dynamically
+    function closeTicket(ticketId) {
+        const statusElement = document.getElementById('status-${ticketId}');
+
+        if (statusElement) {
+            statusElement.textContent = "Closed";
+            statusElement.setAttribute("data-status", "Closed");
+            statusElement.style.color = "#cc0000"; // Dark Red
+            statusElement.style.backgroundColor = "rgba(255, 0, 0, 0.2)"; // Light Red
+        }
+    }
+
+    function goBackToFoundry() {
+        // Get the foundry name from the current URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const foundry = urlParams.get("foundry");
+
+      // Define home URLs for each foundry with proper URL encoding
+      const foundryHomePages = {
+    "CADILLAC US": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("CADILLAC US"),
+    "MUNJAL": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("MUNJAL"),
+    "AIA": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("AIA"),
+    "AIW": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("AIW"),
+    "MCIE": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("MCIE"),
+    "RBA": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("RBA"),
+    "tmljsr": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("tmljsr"),
+    "Shreeraj": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("Shreeraj"),
+    "Vishal": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("Vishal")
+};
+
+// Redirect to the respective foundry home page
+if (foundry in foundryHomePages) {
+    window.location.href = foundryHomePages[foundry];
+} else {
+    alert("Foundry home page not found!");
+}
+}
+
+</script>
+
+{% endblock %}

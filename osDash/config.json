@@ -1,0 +1,23 @@
+{
+    "upload": {
+        "folder": "uploads",
+        "allowed_extensions": ["png", "jpg", "jpeg", "pdf", "docx", "pptx", "txt", "xlsx", "csv"],
+        "max_content_length": 16777216  
+    },
+    "mail": {
+        "server": "smtp.gmail.com",
+        "port": 587,
+        "use_tls": true,
+        "use_ssl": false,
+        "username": "ticketsandman@gmail.com",
+        "password": "vdag eacc cwdw uvfx",
+        "default_sender": ["Support Hub", "ticketsandman@gmail.com"]
+    },
+    "database": {
+        "driver": "mysql+pymysql",
+        "host": "127.0.0.1",
+        "username": "root",
+        "password": "root",
+        "database": "Foundry"
+    }
+}

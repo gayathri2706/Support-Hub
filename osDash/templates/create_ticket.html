@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}
+Create Ticket
+{% endblock %}
+
+{% block content %}
+<div id="form-section" class="form-container">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">Open a New Ticket</h2>
+        <a href="/?user={{ user_info.name if user_info else current_user.username }}" class="btn btn-secondary">← Back</a>
+    </div>
+
+    <form id="ticketForm">
+        <!-- Hidden User Name Field -->
+        <input type="hidden" name="user_name" id="user_name" value="">
+
+        <!-- Foundry Selection -->
+        <div class="form-row">
+            <label for="foundry" class="form-label">Foundry:</label>
+            <input type="text" id="foundryInput" name="foundry_name" class="form-control equal-input" readonly value="{{ foundry }}">
+            <select id="foundryDropdown" name="foundry_name" class="form-select equal-input" required style="display: none;">
+                <option value="">-- Select Foundry --</option>
+                {% for foundry in foundries %}
+                    <option value="{{ foundry }}" {% if foundry == foundry %} selected {% endif %}>{{ foundry }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Name Selection  (Auto-filled) -->
+        <div class="form-row" id="nameRow">
+            <label for="foundryName" class="form-label">Name:</label>
+            <select id="foundryNameDropdown" name="name" class="form-select equal-input" required style="display: none;"></select>
+            <input type="text" id="foundryName" name="name" class="form-control equal-input" readonly style="display: none;">
+        </div>
+
+        <!-- Email (Auto-filled) -->
+        <div class="form-row">
+            <label for="foundryEmail" class="form-label">Email:</label>
+            <input type="text" id="foundryEmail" name="email" class="form-control equal-input" readonly value="{{ user_info.email if user_info else '' }}">
+        </div>
+
+        <!-- Phone (Auto-filled) -->
+        <div class="form-row">
+            <label for="foundryPhone" class="form-label">Phone:</label>
+            <input type="text" id="foundryPhone" name="phone" class="form-control equal-input" readonly value="{{ user_info.phone if user_info else '' }}">
+        </div>
+
+        <!-- Case Type -->
+        <div class="form-row">
+            <label for="helpTopic" class="form-label">Case Type:</label>
+            <select id="helpTopic" class="form-select equal-input" required>
+                <option value="">-- Select Case Type --</option>
+                {% for case in case_types %}
+                    <option value="{{ case.id }}">{{ case.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Issue Description -->
+        <div class="form-row">
+            <label for="issueDescription" class="form-label">Issue Description:</label>
+            <textarea id="issueDescription" class="form-control equal-input" rows="3" required></textarea>
+        </div>
+
+        <!-- Attach File (Optional) -->
+        <div class="form-row">
+            <label for="attachment" class="form-label">Attach File (Optional):</label>
+            <input type="file" id="attachment" class="form-control equal-input" name="attachment_file" aria-describedby="fileHelp">
+            <small id="fileHelp" class="form-text text-muted">This field is optional.</small>
+        </div>
+
+        <!-- Priority Level -->
+        <div class="form-row">
+            <label for="priorityLevel" class="form-label">Priority Level:</label>
+            <select id="priorityLevel" class="form-select equal-input" required>
+                <option value="">-- Select --</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="submitButton">Submit</button>
+    </form>
+
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+    const foundryInput = document.getElementById("foundryInput");
+    const nameInput = document.getElementById("foundryName");
+    const emailInput = document.getElementById("foundryEmail");
+    const phoneInput = document.getElementById("foundryPhone");
+    const caseTypeSelect = document.getElementById("helpTopic");
+    const userNameField = document.getElementById("user_name");
+
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    const foundry = getQueryParam("foundry");
+    const username = decodeURIComponent(getQueryParam("username") || "");
+
+    if (username) userNameField.value = username;
+    if (!foundry) {
+        alert("Missing foundry information in URL.");
+        return;
+    }
+
+    foundryInput.value = foundry;
+
+    try {
+        const response = await fetch(`/api/foundry/details/${foundry}`);
+        const data = await response.json();
+
+        console.log(data); // Debugging step: check the structure of returned data
+
+        if (response.ok) {
+            // Match user by name or user_name
+            const matchedUser = data.names.find(person =>
+                person.name.toLowerCase() === username.toLowerCase() ||
+                (person.user_name && person.user_name.toLowerCase() === username.toLowerCase())
+            );
+
+            if (matchedUser) {
+                // Autofill all fields
+                nameInput.value = matchedUser.person_name || ''; // Use person_name
+                emailInput.value = matchedUser.email || '';
+                phoneInput.value = matchedUser.phone || '';
+
+                // Show the readonly input, hide dropdown
+                nameInput.style.display = "block";
+                emailInput.style.display = "block";
+                phoneInput.style.display = "block";
+
+            } else {
+                // If no match found, show the dropdown to select a name
+                const nameDropdown = document.createElement("select");
+                nameDropdown.id = "nameDropdown";
+                nameDropdown.classList.add("form-select", "equal-input");
+
+                const defaultOption = document.createElement("option");
+                defaultOption.value = "";
+                defaultOption.textContent = "-- Select Name --";
+                nameDropdown.appendChild(defaultOption);
+
+                data.names.forEach(person => {
+                    const option = document.createElement("option");
+                    option.value = person.name;
+                    option.textContent = person.name;
+                    option.dataset.email = person.email;
+                    option.dataset.phone = person.phone;
+                    option.dataset.personName = person.person_name;
+                    nameDropdown.appendChild(option);
+                });
+
+                // Add dropdown to the form
+                document.getElementById('foundryName').parentElement.appendChild(nameDropdown);
+
+                // Handle user selection
+                nameDropdown.addEventListener("change", function () {
+                    const selected = this.options[this.selectedIndex];
+                    emailInput.value = selected.dataset.email || "";
+                    phoneInput.value = selected.dataset.phone || "";
+                    nameInput.value = selected.dataset.personName || "";
+                });
+            }
+
+            // Add additional case types from backend
+            if (data.case_types) {
+                data.case_types.forEach(caseType => {
+                    const option = document.createElement("option");
+                    option.value = caseType;
+                    option.textContent = caseType;
+                    caseTypeSelect.appendChild(option);
+                });
+            }
+        } else {
+            alert(data.error || "Error fetching foundry details.");
+        }
+    } catch (error) {
+        console.error("Error fetching foundry details:", error);
+    }
+});
+</script>
+
+{% endblock %}
