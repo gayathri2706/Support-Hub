@@ -81,7 +81,7 @@
                     <th><strong>Priority</strong></th>
                     <th><strong>Status</strong></th>
                     <th><strong>Resolved Date</strong></th>
-                    <th><strong>Actions/</strong></th> <!-- Action column -->
+                    <th><strong>Actions</strong></th> <!-- Action column -->
                 </tr>
             </thead>
             <tbody id="ticketsTable">
@@ -363,7 +363,7 @@
     }
     
     // Add an event listner for the Escape key to close the modal
-    document.addEventListner('keydown', (event) => {
+    document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
             closeFeedbackModal();
         }
