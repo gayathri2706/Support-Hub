@@ -8,7 +8,7 @@ Create Ticket
 <div id="form-section" class="form-container">
     <div class="d-flex justify-content-between align-items-center">
         <h2 class="mb-0">Open a New Ticket</h2>
-        <a href="/?user={{ user_info.name if user_info else current_user.username }}" class="btn btn-secondary">← Back</a>
+        <a href="/?user={{ current_user.username }}" class="btn btn-secondary">← Back</a>
     </div>
 
     <form id="ticketForm">
@@ -18,21 +18,30 @@ Create Ticket
         <!-- Foundry Selection -->
         <div class="form-row">
             <label for="foundry" class="form-label">Foundry:</label>
-            <input type="text" id="foundryInput" name="foundry_name" class="form-control equal-input" readonly value="{{ foundry }}">
-            <select id="foundryDropdown" name="foundry_name" class="form-select equal-input" required style="display: none;">
-                <option value="">-- Select Foundry --</option>
-                {% for foundry in foundries %}
-                    <option value="{{ foundry }}" {% if foundry == foundry %} selected {% endif %}>{{ foundry }}</option>
-                {% endfor %}
-            </select>
+            {% if show_foundry_dropdown %}
+                <!-- Dropdown for super admin -->
+                <select id="foundryDropdown" name="foundry_name" class="form-select equal-input" required onchange="loadFoundryUsers()">
+                    <option value="">-- Select Foundry --</option>
+                    {% for foundry_option in foundries %}
+                        <option value="{{ foundry_option }}" {% if foundry_option == selected_foundry %} selected {% endif %}>{{ foundry_option }}</option>
+                    {% endfor %}
+                </select>
+            {% else %}
+                <!-- Read-only input for foundry admin -->
+                <input type="text" id="foundryInput" name="foundry_name" class="form-control equal-input" readonly 
+                    value="{{ selected_foundry or (user_info.foundry if user_info else '') }}">
+            {% endif %}
         </div>
 
-        <!-- Name Selection  (Auto-filled) -->
+        <!-- Name Selection  (Auto-filled or Dropdown) -->
         <div class="form-row" id="nameRow">
             <label for="foundryName" class="form-label">Name:</label>
-            <select id="foundryNameDropdown" name="name" class="form-select equal-input" required style="display: none;"></select>
+            <!-- readonly input hidden by default -->
             <input type="text" id="foundryName" name="name" class="form-control equal-input" readonly style="display: none;">
+            <!-- dropdown hidden by default -->
+            <select id="foundryNameDropdown" name="name" class="form-select equal-input" style="display: none;"></select>
         </div>
+
 
         <!-- Email (Auto-filled) -->
         <div class="form-row">
@@ -49,7 +58,7 @@ Create Ticket
         <!-- Case Type -->
         <div class="form-row">
             <label for="helpTopic" class="form-label">Case Type:</label>
-            <select id="helpTopic" class="form-select equal-input" required>
+            <select id="helpTopic" name="helpTopic" class="form-select equal-input" required>
                 <option value="">-- Select Case Type --</option>
                 {% for case in case_types %}
                     <option value="{{ case.id }}">{{ case.name }}</option>
@@ -60,7 +69,7 @@ Create Ticket
         <!-- Issue Description -->
         <div class="form-row">
             <label for="issueDescription" class="form-label">Issue Description:</label>
-            <textarea id="issueDescription" class="form-control equal-input" rows="3" required></textarea>
+            <textarea id="issueDescription" name="issueDescription" class="form-control equal-input" rows="3" required></textarea>
         </div>
 
         <!-- Attach File (Optional) -->
@@ -73,7 +82,7 @@ Create Ticket
         <!-- Priority Level -->
         <div class="form-row">
             <label for="priorityLevel" class="form-label">Priority Level:</label>
-            <select id="priorityLevel" class="form-select equal-input" required>
+            <select id="priorityLevel" name="priorityLevel" class="form-select equal-input" required>
                 <option value="">-- Select --</option>
                 <option value="High">High</option>
                 <option value="Medium">Medium</option>
@@ -86,13 +95,64 @@ Create Ticket
     </form>
 
 <script>
+// Define loadFoundryUsers function outside DOMContentLoaded
+function loadFoundryUsers() {
+    const foundry = document.getElementById('foundryDropdown').value;
+    const nameDropdown = document.getElementById('foundryNameDropdown');
+    
+    if (!foundry) {
+        nameDropdown.innerHTML = '<option value="">-- Select Name --</option>';
+        nameDropdown.style.display = "none";
+        document.getElementById('foundryName').style.display = "none";
+        document.getElementById('foundryEmail').value = '';
+        document.getElementById('foundryPhone').value = '';
+        return;
+    }
+    
+    // Show the name dropdown, hide the readonly input
+    document.getElementById('foundryName').style.display = "none";
+    nameDropdown.style.display = "block";
+    
+    // Fetch users for the selected foundry
+    fetch(`/api/foundry/details/${foundry}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.names && data.names.length > 0) {
+                // Clear previous options
+                nameDropdown.innerHTML = '<option value="">-- Select Name --</option>';
+                
+                // Add all users from this foundry
+                data.names.forEach(person => {
+                    const option = document.createElement('option');
+                    option.value = person.name;
+                    option.textContent = person.name;
+                    option.dataset.email = person.email || '';
+                    option.dataset.phone = person.phone || '';
+                    nameDropdown.appendChild(option);
+                });
+                
+                // Add change event handler
+                nameDropdown.onchange = function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    document.getElementById('foundryEmail').value = selectedOption.dataset.email || '';
+                    document.getElementById('foundryPhone').value = selectedOption.dataset.phone || '';
+                };
+            }
+        })
+        .catch(error => {
+            console.error('Error loading foundry users:', error);
+            alert('Failed to load users for this foundry');
+        });
+}
+
 document.addEventListener("DOMContentLoaded", async function () {
     const foundryInput = document.getElementById("foundryInput");
     const nameInput = document.getElementById("foundryName");
+    const nameDropdown = document.getElementById("foundryNameDropdown");
     const emailInput = document.getElementById("foundryEmail");
     const phoneInput = document.getElementById("foundryPhone");
-    const caseTypeSelect = document.getElementById("helpTopic");
     const userNameField = document.getElementById("user_name");
+    const ticketForm = document.getElementById("ticketForm");
 
     function getQueryParam(param) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -100,9 +160,34 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     const foundry = getQueryParam("foundry");
-    const username = decodeURIComponent(getQueryParam("username") || "");
+    const username = decodeURIComponent(getQueryParam("user") || getQueryParam("username") || "");
 
-    if (username) userNameField.value = username;
+    if (username) {
+        userNameField.value = username;
+        
+        // First try to get user info directly from the username
+        try {
+            const userResponse = await fetch(`/api/foundry/user/${encodeURIComponent(username)}`);
+            const userData = await userResponse.json();
+            
+            if (userResponse.ok) {
+                // We found the user directly - pre-fill all fields
+                foundryInput.value = userData.foundry;
+                nameInput.value = userData.name;
+                nameInput.style.display = "block";
+                nameDropdown.style.display = "none";
+                emailInput.value = userData.email || '';
+                phoneInput.value = userData.phone || '';
+                
+                console.log("User data loaded from username:", userData);
+                return; // Exit early as we have all the data
+            }
+        } catch (error) {
+            console.error("Error fetching user data by username:", error);
+        }
+    }
+
+    // If we reach here, we either don't have a username or couldn't find the user
     if (!foundry) {
         alert("Missing foundry information in URL.");
         return;
@@ -114,66 +199,46 @@ document.addEventListener("DOMContentLoaded", async function () {
         const response = await fetch(`/api/foundry/details/${foundry}`);
         const data = await response.json();
 
-        console.log(data); // Debugging step: check the structure of returned data
-
         if (response.ok) {
-            // Match user by name or user_name
-            const matchedUser = data.names.find(person =>
-                person.name.toLowerCase() === username.toLowerCase() ||
-                (person.user_name && person.user_name.toLowerCase() === username.toLowerCase())
-            );
+            // Find user matching username if we have one
+            let matchedUser = null;
+            if (username) {
+                matchedUser = data.names.find(person => 
+                    person.name.toLowerCase() === username.toLowerCase() ||
+                    (person.user_name && person.user_name.toLowerCase() === username.toLowerCase())
+                );
+            }
 
             if (matchedUser) {
-                // Autofill all fields
-                nameInput.value = matchedUser.person_name || ''; // Use person_name
+                // Show readonly input with matched user info
+                nameInput.value = matchedUser.name;
+                nameInput.style.display = "block";
+                nameDropdown.style.display = "none";
                 emailInput.value = matchedUser.email || '';
                 phoneInput.value = matchedUser.phone || '';
-
-                // Show the readonly input, hide dropdown
-                nameInput.style.display = "block";
-                emailInput.style.display = "block";
-                phoneInput.style.display = "block";
-
             } else {
-                // If no match found, show the dropdown to select a name
-                const nameDropdown = document.createElement("select");
-                nameDropdown.id = "nameDropdown";
-                nameDropdown.classList.add("form-select", "equal-input");
+                // Show dropdown, hide readonly input
+                nameInput.style.display = "none";
+                nameDropdown.style.display = "block";
 
-                const defaultOption = document.createElement("option");
-                defaultOption.value = "";
-                defaultOption.textContent = "-- Select Name --";
-                nameDropdown.appendChild(defaultOption);
+                // Clear previous options except placeholder
+                nameDropdown.innerHTML = `<option value="">-- Select Name --</option>`;
 
+                // Populate dropdown options
                 data.names.forEach(person => {
                     const option = document.createElement("option");
                     option.value = person.name;
                     option.textContent = person.name;
-                    option.dataset.email = person.email;
-                    option.dataset.phone = person.phone;
-                    option.dataset.personName = person.person_name;
+                    option.dataset.email = person.email || "";
+                    option.dataset.phone = person.phone || "";
                     nameDropdown.appendChild(option);
                 });
 
-                // Add dropdown to the form
-                document.getElementById('foundryName').parentElement.appendChild(nameDropdown);
-
-                // Handle user selection
+                // When user selects a name, update email and phone
                 nameDropdown.addEventListener("change", function () {
                     const selected = this.options[this.selectedIndex];
                     emailInput.value = selected.dataset.email || "";
                     phoneInput.value = selected.dataset.phone || "";
-                    nameInput.value = selected.dataset.personName || "";
-                });
-            }
-
-            // Add additional case types from backend
-            if (data.case_types) {
-                data.case_types.forEach(caseType => {
-                    const option = document.createElement("option");
-                    option.value = caseType;
-                    option.textContent = caseType;
-                    caseTypeSelect.appendChild(option);
                 });
             }
         } else {
@@ -182,6 +247,54 @@ document.addEventListener("DOMContentLoaded", async function () {
     } catch (error) {
         console.error("Error fetching foundry details:", error);
     }
+
+    // Add form submission handler
+    ticketForm.addEventListener("submit", async function(e) {
+        e.preventDefault();
+        
+        // Validate form
+        const foundryName = document.querySelector('[name="foundry_name"]').value;
+        const name = nameInput.style.display !== "none" ? nameInput.value : nameDropdown.value;
+        const email = emailInput.value;
+        const caseType = document.getElementById("helpTopic").value;
+        const description = document.getElementById("issueDescription").value;
+        const priority = document.getElementById("priorityLevel").value;
+        
+        if (!foundryName || !name || !email || !caseType || !description || !priority) {
+            alert("Please fill in all required fields");
+            return;
+        }
+        
+        // Create FormData object
+        const formData = new FormData(this);
+        
+        // Add the file if present
+        const fileInput = document.getElementById("attachment");
+        if (fileInput.files.length > 0) {
+            formData.append("attachment_file", fileInput.files[0]);
+        }
+        
+        try {
+            // Send the ticket data to the server
+            const response = await fetch("/create_ticket", {
+                method: "POST",
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(`Ticket created successfully! Your ticket ID is: ${result.ticket_id}`);
+                // Redirect back to the home page
+                window.location.href = `/?user=${encodeURIComponent(username)}`;
+            } else {
+                alert(`Error creating ticket: ${result.message || "Unknown error"}`);
+            }
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            alert("An error occurred while creating the ticket. Please try again.");
+        }
+    });
 });
 </script>
 
