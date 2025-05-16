@@ -576,16 +576,20 @@ Dashboard
     });
 
     document.getElementById('openTicketButton').addEventListener('click', () => {
-    const foundry = "{{ foundry }}";
-    const username = "{{ current_user.username }}";
+        const foundry = "{{ foundry }}";
+        const username = "{{ current_user.username }}";
+        
+        if (foundry === "All") {
+            // For super admin - redirect to new ticket page with just the username
+            // This will show the foundry dropdown for them to choose
+            window.location.href = `/new_ticket?username=${encodeURIComponent(username)}`;
+        } else {
+            // For foundry admin - redirect with both foundry and username
+            // This will pre-select the foundry but allow choosing a person
+            window.location.href = `/new_ticket?foundry=${encodeURIComponent(foundry)}&username=${encodeURIComponent(username)}`;
+        }
+    });
 
-    if (foundry && username) {
-      const url = `/new_ticket?foundry=${encodeURIComponent(foundry)}&username=${encodeURIComponent(username)}`;
-      window.location.href = url;
-    } else {
-      alert("Missing foundry or username.");
-    }
-  });
 </script>
 
 {% endblock %}
