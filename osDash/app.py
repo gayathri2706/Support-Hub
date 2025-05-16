@@ -25,6 +25,10 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"{db_config['driver']}://{db_config['username']}:{db_config['password']}@{db_config['host']}/{db_config['database']}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+
+# Print the final connection URI for verification
+print(app.config['SQLALCHEMY_DATABASE_URI'])
+
 db = SQLAlchemy(app) 
 
 # Temporary user information (for testing)
@@ -170,8 +174,8 @@ def index():
     # Normalize and check user_name match
     persons_raw = db.session.execute(text("SELECT foundry_name, user_name, email, phone, is_admin FROM foundries")).fetchall()
     for foundry_name, user_name_db, email, phone, is_admin in persons_raw:
-        normalized_user_name = user_name_db.replace(" ", "").lower()
-        print(f"Comparing {username} to {normalized_user_name}")  # Debug line
+        normalized_user_name = str(user_name_db).replace(" ", "").lower() if user_name_db else ""
+        
         if normalized_user_name == username:
             tickets = db.session.execute(text("""
                 SELECT * FROM tickets WHERE foundry_name = :foundry_name
@@ -195,8 +199,10 @@ def index():
                                    user_info={"name": user_name_db, "email": email, "phone": phone},
                                    current_user={"username": user_name_db, "is_admin": bool(is_admin)},
                                    dashboard_tickets=dashboard_tickets if is_admin else None)
+    
+    # If we reach here, we didn't find a matching user - this was the missing return statement
+    return "Error: Invalid user - could not find matching username", 401
 
-    return "Error: Invalid user", 401
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     """
@@ -223,11 +229,20 @@ def dashboard():
         """)).fetchall()
     else:
         # Foundry admin: show tickets for their foundry only
+        # Fix: Use user_name instead of username in the query
         result = db.session.execute(text("""
             SELECT DISTINCT foundry_name 
             FROM foundries 
-            WHERE LOWER(user_name) = LOWER(:username) AND is_admin = 1
+            WHERE LOWER(person_name) = LOWER(:username) AND is_admin = 1
         """), {'username': username}).fetchone()
+
+        # If not found by person_name, try with user_name
+        if not result:
+            result = db.session.execute(text("""
+                SELECT DISTINCT foundry_name 
+                FROM foundries 
+                WHERE LOWER(user_name) = LOWER(:username) AND is_admin = 1
+            """), {'username': username}).fetchone()
 
         # If the result is None or empty, deny access
         if not result:
@@ -252,61 +267,6 @@ def dashboard():
                            tickets=tickets,
                            foundry=foundry_name)
 
-    """
-    Render the dashboard for super admin or foundry-level admin.
-    """
-    username = request.args.get("user")
-    
-    if not username:
-        return "Error: Username missing", 400
-
-    print(f"Username received: {username}")  # Debugging line
-
-    # Super admin: see all tickets
-    if "admin" in username.lower():
-        foundry_name = "All"
-        # Query for all tickets
-        tickets = db.session.execute(text("""
-            SELECT t.ticket_id, t.date_created, t.foundry_name, t.issue, t.issue_description, 
-                   t.priority, t.status, t.resolved_time, t.attachment_file,
-                   a.name AS assigned_to, a.email AS assigned_email
-            FROM tickets t
-            LEFT JOIN assign_to a ON t.assign_to = a.name
-            ORDER BY COALESCE(t.resolved_time, t.date_created) DESC
-        """)).fetchall()
-    else:
-        # Foundry admin: show tickets for their foundry only
-        result = db.session.execute(text("""
-            SELECT DISTINCT foundry_name 
-            FROM foundries 
-            WHERE LOWER(username) = LOWER(:username) AND is_admin = 1
-        """), {'username': username}).fetchone()
-
-        # Debugging line: print the query result
-        print(f"Foundry admin check result: {result}")
-
-        # If the result is None or empty, deny access
-        if not result:
-            return f"Unauthorized: No admin rights found for username '{username}'. Query result: {result}", 403
-
-        foundry_name = result[0]
-        
-        # Query for tickets in the foundry
-        tickets = db.session.execute(text("""
-            SELECT t.ticket_id, t.date_created, t.foundry_name, t.issue, t.issue_description, 
-                   t.priority, t.status, t.resolved_time, t.attachment_file,
-                   a.name AS assigned_to, a.email AS assigned_email
-            FROM tickets t
-            LEFT JOIN assign_to a ON t.assign_to = a.name
-            WHERE t.foundry_name = :foundry_name
-            ORDER BY COALESCE(t.resolved_time, t.date_created) DESC
-        """), {'foundry_name': foundry_name}).fetchall()
-
-    # Render the dashboard template
-    return render_template("dashboard.html",
-                           current_user={"username": username},
-                           tickets=tickets,
-                           foundry=foundry_name)
 @app.route('/api/assign-to', methods=['GET'])
 def get_assignees():
     """Fetch all assignees from the database including admin status."""
@@ -393,8 +353,36 @@ def get_user_details(foundry, username):
     else:
         # Return error message if the user is not found
         return jsonify({"error": "User not found"}), 404
+    
+# Modify the get_user_details route to properly fetch by username
+@app.route('/api/foundry/user/<username>', methods=['GET'])
+def get_user_details_by_username(username):
+    """Fetch user details by username from any foundry."""
+    print(f"Fetching user details for username: {username}")
+    
+    # Execute query to find user by username in any foundry
+    user = db.session.execute(
+        text("""
+            SELECT foundry_name, person_name, email, phone 
+            FROM foundries 
+            WHERE LOWER(user_name) = LOWER(:username) OR LOWER(person_name) = LOWER(:username)
+        """),
+        {"username": username}
+    ).fetchone()
 
-
+    # Check if the user exists in the database
+    if user:
+        # Return user details in JSON format
+        return jsonify({
+            "foundry": user[0],
+            "name": user[1],
+            "email": user[2],
+            "phone": user[3]
+        })
+    else:
+        # Return error message if the user is not found
+        return jsonify({"error": "User not found"}), 404
+    
 # Assign To Management Page
 @app.route('/assign-to')
 def assign_to_page():
@@ -504,53 +492,76 @@ def get_foundries():
 @app.route('/new_ticket')
 def new_ticket():
     """
-    Render the Create Ticket form. If user is a person, auto-fill their details.
+    Render the Create Ticket form with appropriate options based on user role.
     """
     try:
-        # Get the 'foundry' and 'username' from query parameters
+        # Get URL parameters
         foundry = request.args.get('foundry')
-        username = request.args.get('user') or request.args.get('username')  # Handle both ?user= and ?username=
+        username = request.args.get('user') or request.args.get('username')
 
-        # If no 'foundry' is provided, redirect to the homepage or show an error page
-        if not foundry:
-            return redirect(url_for('index'))  # or show a custom error page
+        if not username:
+            return "Missing username parameter", 400
 
         # Query for available case types for the ticket
         case_types = db.session.execute(text("SELECT id, name FROM case_types ORDER BY id")).fetchall()
-
+        
         # Initialize user_info to None
         user_info = None
-
-        # If a username is provided, try to find user info within the specified foundry
-        if username:
-            person = db.session.execute(text("""
-                SELECT person_name, email, phone FROM foundries 
-                WHERE foundry_name = :foundry AND person_name = :username
-            """), {'foundry': foundry, 'username': username}).fetchone()
-
-            if person:
-                # If user is found, fill in user info
-                user_info = {
-                    'name': person[0],
-                    'email': person[1],
-                    'phone': person[2],
-                    'foundry': foundry  # Add foundry information to user_info
-                }
-
-        # Pass the 'foundry', 'case_types', and 'user_info' to the template for rendering
-        foundries = [foundry]  # Limit dropdown to the current foundry only
-
-        return render_template('create_ticket.html', 
-                               foundries=foundries, 
-                               case_types=case_types, 
-                               user_info=user_info, 
-                               current_user={"username": username})
+        
+        # Check if user is super admin
+        is_super_admin = "admin" in username.lower()
+        
+        # Get all foundries for dropdown (or just the selected one for foundry admin)
+        if is_super_admin and not foundry:
+            # Super admin without foundry selected - show all foundries
+            foundries = [row[0] for row in db.session.execute(
+                text("SELECT DISTINCT foundry_name FROM foundries ORDER BY foundry_name")
+            ).fetchall()]
+            
+            # Allow super admin to choose foundry (don't show specific user info yet)
+            return render_template('create_ticket.html',
+                                  foundries=foundries,
+                                  case_types=case_types,
+                                  user_info=None,
+                                  current_user={"username": username, "is_admin": True},
+                                  show_foundry_dropdown=True)
+        
+        # If we have a foundry (either because user is foundry admin or super admin selected one)
+        if foundry:
+            # Try to find user info (if a regular user is creating ticket)
+            if not is_super_admin:
+                person = db.session.execute(text("""
+                    SELECT person_name, email, phone FROM foundries 
+                    WHERE foundry_name = :foundry AND LOWER(person_name) = LOWER(:username)
+                """), {'foundry': foundry, 'username': username}).fetchone()
+                
+                if person:
+                    user_info = {
+                        'name': person[0],
+                        'email': person[1],
+                        'phone': person[2],
+                        'foundry': foundry
+                    }
+            
+            # Get all foundries for super admin, or just this one for foundry admin
+            foundries = [foundry] if not is_super_admin else [row[0] for row in db.session.execute(
+                text("SELECT DISTINCT foundry_name FROM foundries ORDER BY foundry_name")
+            ).fetchall()]
+            
+            return render_template('create_ticket.html',
+                                  foundries=foundries,
+                                  case_types=case_types,
+                                  user_info=user_info,
+                                  current_user={"username": username, "is_admin": is_super_admin},
+                                  show_foundry_dropdown=is_super_admin,
+                                  selected_foundry=foundry)
+        else:
+            return "Foundry not specified", 400
 
     except Exception as e:
         # Handle unexpected errors gracefully
         return jsonify({'error': f'An error occurred: {str(e)}'}), 500
-
-
+      
 @app.route('/tickets')
 def tickets():
     """Render the tickets page with a dropdown to filter by foundry."""
@@ -694,76 +705,135 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import text
 import os, random
 
-@app.route('/api/tickets', methods=['POST'])
+@app.route('/create_ticket', methods=['GET', 'POST'])
 def create_ticket():
-    try:
-        user_name = request.form.get('user_name')
-        priority = request.form.get('priority')
-        issue = request.form.get('issue')
-        issue_description = request.form.get('issue_description')
-        file = request.files.get('attachment_file')
+    """Handle ticket creation with proper form handling and database interaction."""
+    if request.method == 'GET':
+        # Get URL parameters
+        foundry = request.args.get('foundry')
+        username = request.args.get('user')
 
-        # Validate required fields
-        if not all([user_name, priority, issue, issue_description]):
-            return jsonify({'error': 'All required fields must be filled out.'}), 400
+        if not foundry:
+            return "Missing foundry parameter", 400
 
-        # Get user details from foundries table
-        user_query = text("""
-            SELECT foundry_name, email, name 
-            FROM foundries 
-            WHERE user_name = :user_name
-        """)
-        result = db.session.execute(user_query, {'user_name': user_name}).fetchone()
+        # Get case types for the form
+        case_types = db.session.execute(text("SELECT id, name FROM case_types ORDER BY id")).fetchall()
+        
+        # Initialize user_info
+        user_info = None
+        
+        # If username is provided, try to find matching user in the foundry
+        if username:
+            user_query = text("""
+                SELECT person_name, email, phone FROM foundries 
+                WHERE foundry_name = :foundry_name AND person_name = :username
+            """)
+            
+            user = db.session.execute(user_query, 
+                                     {'foundry_name': foundry, 'username': username}).fetchone()
+            
+            if user:
+                user_info = {
+                    'name': user[0],
+                    'email': user[1],
+                    'phone': user[2],
+                    'foundry': foundry
+                }
 
-        if not result:
-            return jsonify({'error': 'User not found in foundries table.'}), 404
-
-        foundry_name, email, name = result
-
-        # Handle file upload
-        filename = None
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
-
-        # Generate ticket ID
-        ticket_id = f"{foundry_name[:3].upper()}-{random.randint(1000, 9999)}"
-
-        # Insert ticket into the database
-        query = text("""
-            INSERT INTO tickets (
-                ticket_id, foundry_name, name, email, priority, issue,
-                issue_description, status, date_created, attachment_file
+        # Get all foundries for the dropdown (limited to the current foundry in this case)
+        foundries = [foundry]
+        
+        return render_template('create_ticket.html',
+                              foundries=foundries,
+                              case_types=case_types,
+                              user_info=user_info,
+                              current_user={"username": username})
+    
+    elif request.method == 'POST':
+        try:
+            # Extract form data
+            foundry_name = request.form.get('foundry_name')
+            name = request.form.get('name')
+            email = request.form.get('email')
+            phone = request.form.get('phone', '')
+            case_type_id = request.form.get('helpTopic')
+            issue_description = request.form.get('issueDescription')
+            priority = request.form.get('priorityLevel')
+            
+            # Validate required fields
+            if not all([foundry_name, name, email, case_type_id, issue_description, priority]):
+                return jsonify({"success": False, "message": "Missing required fields"}), 400
+            
+            # Get case type name from ID
+            case_type_query = text("SELECT name FROM case_types WHERE id = :id")
+            case_type_result = db.session.execute(case_type_query, {'id': case_type_id}).fetchone()
+            if not case_type_result:
+                return jsonify({"success": False, "message": "Invalid case type"}), 400
+            
+            case_type_name = case_type_result[0]
+            
+            # Generate ticket ID (use a more robust method in production)
+            current_time = datetime.now()
+            ticket_id = f"{foundry_name[:3].upper()}-{current_time.strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+            
+            # Handle file upload if provided
+            attachment_filename = None
+            if 'attachment_file' in request.files:
+                file = request.files['attachment_file']
+                if file and file.filename and allowed_file(file.filename):
+                    # Create a safe filename with user and timestamp
+                    filename = secure_filename(file.filename)
+                    base, ext = os.path.splitext(filename)
+                    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+                    new_filename = f"{name.replace(' ', '_')}_{timestamp}{ext}"
+                    
+                    # Save to user files folder
+                    file_path = os.path.join(USER_FILES_FOLDER, new_filename)
+                    file.save(file_path)
+                    attachment_filename = new_filename
+            
+            # Insert new ticket into database
+            insert_query = text("""
+                INSERT INTO tickets 
+                (ticket_id, foundry_name, name, email, phone, issue, issue_description, 
+                priority, status, attachment_file, date_created, last_updated)
+                VALUES 
+                (:ticket_id, :foundry_name, :name, :email, :phone, :issue, :issue_description,
+                :priority, 'Open', :attachment_file, NOW(), NOW())
+            """)
+            
+            db.session.execute(insert_query, {
+                'ticket_id': ticket_id,
+                'foundry_name': foundry_name,
+                'name': name,
+                'email': email,
+                'phone': phone,
+                'issue': case_type_name,
+                'issue_description': issue_description,
+                'priority': priority,
+                'attachment_file': attachment_filename
+            })
+            
+            db.session.commit()
+            
+            # Send confirmation email
+            send_ticket_confirmation_email(
+                foundry_name, email, ticket_id, name, 
+                case_type_name, issue_description, priority
             )
-            VALUES (
-                :ticket_id, :foundry_name, :name, :email, :priority, :issue,
-                :issue_description, 'Open', NOW(), :attachment_file
-            )
-        """)
-        db.session.execute(query, {
-            'ticket_id': ticket_id,
-            'foundry_name': foundry_name,
-            'name': name,
-            'email': email,
-            'priority': priority,
-            'issue': issue,
-            'issue_description': issue_description,
-            'attachment_file': filename
-        })
-        db.session.commit()
-
-        # Send confirmation email
-        send_ticket_confirmation_email(
-            foundry_name, email, ticket_id, name, issue, issue_description, priority
-        )
-
-        return jsonify({'success': 'Ticket created successfully!', 'ticket_id': ticket_id}), 201
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({'error': f'An unexpected error occurred: {str(e)}'}), 500
-
+            
+            # Return success response
+            return jsonify({
+                "success": True,
+                "message": "Ticket created successfully",
+                "ticket_id": ticket_id
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating ticket: {str(e)}")
+            return jsonify({"success": False, "message": f"Error creating ticket: {str(e)}"}), 500
+        
 def send_ticket_confirmation_email(foundry, user_email, ticket_id, user_name, issue, description, priority):
     try:
         admin_results = db.session.execute(text("SELECT email FROM assign_to WHERE is_admin = TRUE")).fetchall()
