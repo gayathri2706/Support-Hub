@@ -1,0 +1,591 @@
+CREATE DATABASE Foundry_DEMO;
+USE Foundry_DEMO;
+
+CREATE TABLE assign_to (
+    id INT(11) AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    is_admin TINYINT(1) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE case_types (
+    id INT(11) AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE foundries (
+    id INT(11) AUTO_INCREMENT PRIMARY KEY,
+    foundry_name VARCHAR(255) NOT NULL,
+    pkey INT(11) NOT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    person_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NULL,
+	is_admin TINYINT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE tickets (
+    last_updated DATETIME NOT NULL,
+    ticket_id VARCHAR(255) PRIMARY KEY,
+    foundry_name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    priority ENUM('High', 'Medium', 'Low') NOT NULL,
+    issue VARCHAR(255) NOT NULL,
+    issue_description TEXT NOT NULL,
+    date_created DATETIME NOT NULL,
+    status ENUM('Open', 'Resolved', 'Closed') NOT NULL,
+    comments TEXT,
+    resolved_file VARCHAR(255),
+    resolved_time DATETIME,
+    attachment_file VARCHAR(255),
+    assign_to VARCHAR(255)
+);
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Neosym Industry Limited', 1, 'neosym', 'Genuser Genuser', 'v2sandman@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('XYZ & Co', 2, 'demo', 'Murali Krishnan', 'murali@mpminfosoft.com', NULL, '1'),
+('XYZ & Co', 2, 'test', 'Demodev Test', 'ganesh.s1986@gmail.com', NULL, '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('TATA MOTORS', 3, 'tata', 'Murali Krishnan', 'murali@mpminfosoft.in', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Brakes India Limited', 4, 'brakes', 'Murali Krishnan', 'sandman02@mpmindia.com', NULL, '1'),
+('Brakes India Limited', 4, 'sandplant', 'Ganesan M', 'ganesan.m@brakesindia.co.in', '9843828608', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Amtek India Ltd', 6, 'amtek', 'Sandman MPM 2', 'sandmanmpm18@gmail.com', NULL, '1'),
+('Amtek India Ltd', 6, 'qa', 'Asha', 'qms.diamond@castextechnologies.com', '9413873162', '0'),
+('Amtek India Ltd', 6, 'jagmendra', 'Jagmendra Singh', 'jagmendra@castextechnologies.com', NULL, '0'),
+('Amtek India Ltd', 6, 'Amtek User', 'Amtek User', 'muralidharanm1611@gmail.com', NULL, '0'),
+('Amtek India Ltd', 6, 'shukla', 'SN Shukla', 'sn.shukla@castextechnologies.com', '7976954225', '0'),
+('Amtek India Ltd', 6, 'ajay', 'Ajay Kumar', 'lab.diamond@castextechnologies.com', '9772801292', '0'),
+('Amtek India Ltd', 6, 'SCADAAmtek', 'SCADA Amtek', 'scadaamtek@gmail.com', NULL, '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('TATA Motors Chinchwad', 7, 'tml', 'Riya Chopkar', 'riya.chopkar@yahoo.com', '9423176744', '1'),
+('TATA Motors Chinchwad', 7, 'kirit', 'Kirit Bandi', 'kirit.bandi@tatamotors.com', '8308848395', '0'),
+('TATA Motors Chinchwad', 7, 'mmk52423', 'Makarand Kulkarni', 'mmk52423@tatamotors.com', '7276097955', '0'),
+('TATA Motors Chinchwad', 7, 'Prashant Joshi', 'joshi.prashant@tatamotors.com', '7276074643', '0'),
+('TATA Motors Chinchwad', 7, 'Sandeep Munshi', 'sandeep.munshi@tatamotors.com', '7276098808', '0'),
+('TATA Motors Chinchwad', 7, 'SSS662278', 'Shubham Srivastav', 'sss662278@tatamotors.com', '7276052695', '0'),
+('TATA Motors Chinchwad', 7, 'sbs149030', 'Sanjay Shete', 'sbs149030@tatamotors.com', '8237005284', '0'),
+('TATA Motors Chinchwad', 7, 'ssy149029', 'Suresh Yadav', 'ssy149029@tatamotors.com', '8237005202', '0'),
+('TATA Motors Chinchwad', 7, 'pmb', 'Prashant Bharade', 'pmb654110@tatamotors.com', '9657712526', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Shanthala Spherocast Private Limited', 8, 'shanthala', 'Murali Krishnan', 'shanthalaspherocast.2014@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Menon and Menon Ltd', 9, 'menon&menon', 'Murali Krishnan', 'sandman01@mpmindia.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Sakthi Auto Component Limited', 10, 'shaktiauto', 'Murali Krishnan', 'shaktiauto.2014@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('PSG & SONS CHARITIES', 11, 'psgfoundry', 'Murali Krishnan', 'psgfoundry.2014@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Rico Auto Industries', 12, 'rico', 'Murali Krishnan', 'ricocastings@gmail.com', NULL, '1'),
+('Rico Auto Industries', 12, 'ranjan', 'Ranjan Kumar', 'ranjankumar@ricoauto.com', NULL, '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Demo', 13, 'demo2', 'Murali Krishnan', 'akram@mpminfosoft.com', NULL, '1'),
+('Demo', 13, 'DigiSmart', 'Abhi Shankar', 'abhishankar@mpminfosoft.com', NULL, '0'),
+('Demo', 13, 'Qualitylab', 'Yogesh Sharma', 'Sharmayogeah77@gmail.com', '9413259257', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Shriniwas Engineering Auto Components Pvt. Ltd', 14, 'seaco', 'Murali Krishnan', 'seacofoundry.2014@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Nelcast Limited', 15, 'nelcast', 'Sandman MPM 5', 'sandmanmpm5@gmail.com', NULL, '1'),
+('Nelcast Limited', 15, 'nelcast_alt', 'Ganesh Sankaran', 'ganeshsankaran@gyandata.com', NULL, '0'),
+('Nelcast Limited', 15, 'Ravindra', 'Ravindra Yalamandala', 'ravindrayalamandala@gmail.com', NULL, '0'),
+('Nelcast Limited', 15, 'Yuvaraj', 'Yuvaraj K', 'yuvanmission@gmail.com', NULL, '0'),
+('Nelcast Limited', 15, 'scadauser', 'SCADA User', 'syadmin@mpmindia.com', '9823030101', '0'),
+('Nelcast Limited', 15,'hemakumar', 'Hema Kumar', 'nhemakumar@gmail.com', NULL, '0'),
+('Nelcast Limited', 15, 'Dinesh', 'Dinesh B', 'qs@nelcast.com', NULL, '0'),
+('Nelcast Limited', 15, 'SandmanMPM', 'Sandman MPM', 'sandmanmpm6@gmail.com', NULL, '0'),
+('Nelcast Limited', 15, 'gurusakthi', 'Guru sakthi P', 'gurumett@gmail.com', '9047333489', '0'),
+('Nelcast Limited', 15, 'superadmin', 'ragini a', 'ragini@mpminfosoft.com', NULL, '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Western Michigan University', 16, 'WMU_A', 'Prayag Patel', 'prayag.patel@wmich.edu', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('JS Auto Cast', 17,'jsauto', 'Murali Krishnan', 'admin@jsauto.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Fenance Auto', 18, 'fenace', 'Manoj Jadhao', 'manojjadhao@gmail.com', '9561026773', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Ishan Casting Pvt. Ltd.', 19, 'ICPL', 'ICPL Ishan', 'akash_afm@yahoo.co.in', NULL, '0'),
+('Ishan Casting Pvt. Ltd.', 19,'production', 'Manoj Maskare', 'manojmaskare@gmail.com', '8806678676', '0'),
+('Ishan Casting Pvt. Ltd.', 19, 'rejection', 'Sunil Masram', 'sunilmasram716@gmail.com', '9158388692', '0'),
+('Ishan Casting Pvt. Ltd.', 19, 'charudatta', 'Charodatta Darbhe', 'charbhe@rediffmail.com', '9326955118', '0'),
+('Ishan Casting Pvt. Ltd.', 19, 'Vinod singh', 'Vinod Kumar Singh', 'vinod.614@rediffmail.com', '9545603815', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('WMU', 20, 'WMU_B', 'Prayag Patel', 'prayag22@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('WM University', 21, 'WMU_C', 'P Patel', 'palak49@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Western Michigan', 22, 'WMU_D', 'Prayag Patel', 'palak_me2000@yahoo.co.in', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('HUBNER Sanfonas Industrias Ltda.', 23, 'hubner', 'JV Patankar', 'jvp@mpmindia.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Hinduja Foundries', 24, 'hinduja', 'Jayant Patankar', 'sandmanmpm224@gmail.com', '9730031025', '1'),
+('Hinduja Foundries', 24, 'hinduja1', 'Mr Nishnath', 'chennai@mpmindia.com', '8374606076', '0'),
+('Hinduja Foundries', 24, 'muthubabu', 'Muthu Babu', 'muthubabu.c@hindujafoundries.com', '9952564709', '0'),
+('Hinduja Foundries', 24, 'karthicknagaraj', 'Karthick N', 'n.karthick@hindujafoundries.com', '9047136104', '0'),
+('Hinduja Foundries', 24, 'Karthickraju', 'Karthick R', 'r.karthick@hindujafoundries.com', '9677475231', '0'),
+('Hinduja Foundries', 24, 'sand plant', 'Sand Plant', 'a.parthiban@hindujafoundries.com', '9003280609', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('ArushMetal', 25,'arush', 'Manoj Jadhao', 'manojjadhao2000@gmail.com', '9561026773', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Kiswok Industries P. Ltd', 26, 'kiswok', 'Sandman MPM 4', 'sandmanmpm19@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Hi Mac', 27, 'Himac', 'RIYA CHOPKAR', 'riya.chopkar@mpminfosoft.com', '9423176744', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('MPM Infosoft Private Limited', 28, 'sandman', 'Sandman Mpm22', 'sandmanmpm22@gmail.com', NULL, '1'),
+('MPM Infosoft Private Limited', 28, 'sandman1', 'Mark Waugh', 'sandmanmpm222@gmail.com', NULL, '0'),
+('MPM Infosoft Private Limited', 28, 'mmuralidharan', 'Muralidharan M', 'mankind.m01@gmail.com', NULL, '0'),
+('MPM Infosoft Private Limited', 28, 'shwetabh', 'Shwetabh Rai', 'shwetabh.rai@mpminfosoft.com', '9120993997', '0'),
+('MPM Infosoft Private Limited', 28, 'SandmanIndo', 'Sandman Indonesia', 'indonesiasandman@gmail.com', NULL, '0'),
+('MPM Infosoft Private Limited', 28, 'sachin', 'Sachin Phalke', 'sachin.phalke@mpmindia.com', '9766196460', '0'),
+('MPM Infosoft Private Limited', 28, 'Sunil Bhamla ', 'Sunil Bhamla', 'sunil.bhamla@mpmindia.com', '9671329671', '0'),
+('MPM Infosoft Private Limited', 28, 'Kumiko', 'Kumiko Demo', 'kumikosandman@gmail.com', NULL, '0'),
+('MPM Infosoft Private Limited', 28, 'Carpenter_Brothers', 'Carpenter Sandman', 'carpentersandman@gmail.com', NULL, '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Tata Motors, Jamshedpur', 29, 'tmljsr', 'Sandman Mpm10', 'sandmanmpm7@gmail.com', NULL, '1'),
+('Tata Motors, Jamshedpur', 29, 'bcghosh', 'Biman Ghosh', 'bcghosh@tatamotors.com', '9263639995', '1'),
+('Tata Motors, Jamshedpur', 29, 'rabi', 'Rabindra Nath De', 'rabindra.de@tatamotors.com', '8797593327', '0'),
+('Tata Motors, Jamshedpur', 29, 'munishkumar', 'MUNISH KUMAR', 'munish.kumar@tatamotors.com', '7033298444', '0'),
+('Tata Motors, Jamshedpur', 29, 'Aamir', 'Mohd Aamir Jameel', 'mohd.jameel@tatamotors.com', '9386090180', '0'),
+('Tata Motors, Jamshedpur', 29, 'prashantnifft', 'Prashant Shekhar', 'shekhar.prashant@tatamotors.com', '9234612190', '0'),
+('Tata Motors, Jamshedpur', 29, 'tml2020', 'Karthik Kumar', 'sandmanmpm15@gmail.com', '9095189018', '0'),
+('Tata Motors, Jamshedpur', 29, 'Sanjay mahto', 'Sanjay Kumar Mahto', 'jamshedpur@mpmindia.com', '9570033336', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Cadillac Casting, Inc.', 30, 'cadillac', 'Jay Morrison', 'rahul.v@mpminfosoft.com', NULL, '1'),
+('Cadillac Casting, Inc.', 30, 'CadillacGuest', 'Cadillac Guest', 'kavin@mpminfosoft.com', NULL, '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('MPG Casting Technologies', 31, 'st.cloud', 'RIYA CHOPKAR', 'phadtare@mpmindia.com', '9730031021', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Northern Foundry', 32, 'nfllc', 'RIYA CHOPKAR', 'techservices@mpmindia.com', '9423105631', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Metal Technologies Inc', 33, 'mti', 'RIYA CHOPKAR', 'devrajchauhan0@gmail.com', '7870094809', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Aarrowcast Inc', 34, 'aarrowcast', 'RIYA CHOPKAR', 'adminpune@mpmindia.com', '7507005590', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Madras Engineering Industries Private Limited.', 35, 'madrasengg', 'RIYA CHOPKAR', 'vtpatil@mpmindia.com', '9890607344', '1'),
+('Madras Engineering Industries Private Limited.', 35, 'arunraj', 'Arun Raj', 'fdylab@mei.co.in', '9677126445', '0'),
+('Madras Engineering Industries Private Limited.', 35, 'Sureshbabu', 'Suresh Babu', 'sureshbabu@mei.co.in', '8754590495', '0'),
+('Madras Engineering Industries Private Limited.', 35, 'sakthir', 'Sakthivel Thirunavukarasu', 'sakthir@mei.co.in', '9840372522', '0'),
+('Madras Engineering Industries Private Limited.', 35, 'Fdyprocess', 'Foundry Process', 'fdyprocess@mei.co.in', NULL, '0'),
+('Madras Engineering Industries Private Limited.', 35, 'SHUNMUGAM M N', 'Shunmugam MN', 'mnshunmugam@mei.co.in', '9940060615', '0'),
+('Madras Engineering Industries Private Limited.', 35, 'baggiyaraj', 'Baggiya Raj', 'fdymaint@mei.co.in', '9677178670', '0'),
+('Madras Engineering Industries Private Limited.', 35, 'psaravanan', 'Saravanan P', 'psaravanan@mei.co.in', '9940181233', '0'),
+('Madras Engineering Industries Private Limited.', 35, 'duraisamymei', 'Duraisamy Rangasamy', 'duraisamy@mei.co.in', '9677178674', '0'),
+('Madras Engineering Industries Private Limited.', 35, 'bvijayachandran', 'Vijaya Chandran', 'vijayachandran@mei.co.in', '9500055357', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Federal Mogal corporation', 36, 'federalmogul', 'RIYA CHOPKAR', 'kunal.gokhale@mpmindia.com', '9665223779', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('MPG Casting Technologies (Formerly Grede)', 37, 'mpgironmountain', 'RIYA CHOPKAR', 'manasig1976@gmail.com', '9423213624', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('DrSamsTeam', 38, 'WMU_E', 'Suganyaa Gnanamurthy', 'suganyaa.gnanamurthy@wmich.edu', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Integra Automation', 39, 'integra', 'riya chopkar', 'aish.5991@gmail.com', '8329481200', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('AD Foundry', 40, 'adfoundry', 'Himanshu Khandelwal', 'himanshu@mpminfosoft.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Mahindra and Mahindra', 41, 'mahindra', 'Himanshu Khandelwal', 'sandmanmpm8@gmail.com', '9167481947', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Lodge Cast Iron (US)', 42, 'lodge', 'Dr. Himanshu Khandelwal', 'khandelwal_iit@yahoo.com', '9167481947', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Fonderie Poitras Ltee', 43, 'poitras', 'Narayanan Kr', 'narayanan@mpminfosoft.com', '9167481947', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Nelcast Limited, Gudur', 44, 'raghava', 'Raghavendra T', 'thiranamraghavendra102@gmail.com', '9440826376', '0'),
+('Nelcast Limited, Gudur', 44, 'Srinivas1960', 'Srinivasa Rao', 'srao@nelcast.com', '9701567206', '0'),
+('Nelcast Limited, Gudur', 44, 'ramanaiah', 'Ramana B', 'ramanabynaboina@gmail.com', '', '0'),
+('Nelcast Limited, Gudur', 44, 'Nelcastgudur', 'Anand Babu', 'madevbap007@gmail.com', '', '1'),
+('Nelcast Limited, Gudur', 44, 'gsreenivasa', 'Srinivasa Kumar', 'gsk@nelcast.com', '9701567235', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Naledi Foundry', 45, 'naledi', 'Narayanan K R', 'sandmanmpm4@gmail.com', '9791483106', '1'),
+('Naledi Foundry', 45, 'sandlab', 'Sand Lab', 'sandlab@ni-foundry.co.za', 'null', '0'),
+('Naledi Foundry', 45, 'Precious', 'Precious Tshikovhi', 'precious@ni-foundry.co.za', 'null', '0'),
+('Naledi Foundry', 45, 'naledibot', 'Naledi Bot', 'naledibot@ni-foundry.co.za', 'null', '0'),
+('Naledi Foundry', 45, 'testnaledi', 'Tech Help', 'macpraveen@gmail.com', 'null', '0'),
+('Naledi Foundry', 45, 'kevin@ni-foundry.co.za', 'Kevin Pretorius', 'kevin@ni-foundry.co.za', 'null', '0'),
+('Naledi Foundry', 45, 'kedibone@ni-foundry.co.za', 'Kedibone Mokoena', 'kedibone@ni-foundry.co.za', 'null', '0'),
+('Naledi Foundry', 45, 'FulufheloN', 'Fulu Netshimbupfe', 'fulufhelo@ni-foundry.co.za', 'null', '0'),
+('Naledi Foundry', 45, 'Francy', 'Francy Matoto', 'francy@ni-foundry.co.za', 'null', '0'),
+('Naledi Foundry', 45, 'EttieneJnr', 'Ettiene Van Der Westhuizen', 'ettienevd@ni-foundry.co.za', 'null', '0'),
+('Naledi Foundry', 45, 'collinsm', 'Collins Mthethwa', 'collins@ni-foundry.co.za', 'null', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Brakes India Unit 2', 47, 'VenkatesanG', 'Venkatesan G', 'venkatesang82327@gmail.com', '7639887332', '0'),
+('Brakes India Unit 2', 47, 'thelliyan', 'R Thelliyan', 'thelliyan.r@gmail.com', 'null', '0'),
+('Brakes India Unit 2', 47, 'srinivasan', 'R Srinivasan', 'srinivasan.r@brakesindia.co.in', '9843228690', '0'),
+('Brakes India Unit 2', 47, '80159', 'C Shanmugam', 'shanmugam.c@brakesindia.co.in', '9843228601', '0'),
+('Brakes India Unit 2', 47, 'Brakes2', 'Muralidharan M', 'muralidharan@mpminfosoft.com', '7299114796', '1'),
+('Brakes India Unit 2', 47, 'gurulab', 'N Guruprasath', 'guruprasatharcot@gmail.com', 'null', '0'),
+('Brakes India Unit 2', 47, 'ganapathi.subramaniam@brakesindia.co.in', 'R Ganapathi Subramaniam', 'ganapathi.subramaniam@brakesindia.co.in', '9843228648', '0'),
+('Brakes India Unit 2', 47, 'PURUSHOTHAMAN', 'C Purushothaman', 'c.purushothaman4095@gmail.com', 'null', '0'),
+('Brakes India Unit 2', 47, 'brakesbot', 'Brakes Bot', 'brakesbotsandman@brakesindia.co.in', 'null', '0'),
+('Brakes India Unit 2', 47, 'babu ', 'S Babu', 'babu.s@brakesindia.co.in', '9843238774', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Shivalik', 48, 'shivalik', 'Subbarami Reddy', 'subbarami@mpminfosoft.com', '9494083731', '1'),
+('Shivalik', 48, 'SHIVALIK LAB', 'Rakesh Vishwakarma', 'seipllab@gmail.com', '8107262318', '0'),
+('Shivalik', 48, 'Rahul Desai', 'Rahul Desai', 'rahul.desai@mpmindia.com', 'null', '0'),
+('Shivalik', 48, 'foundryquality', 'Shubham Khatri', 'quality.shivalikcasting@gmail.com', '7869099989', '0'),
+('Shivalik', 48, 'pramod', 'Pramod Phadtare', 'production@shivalikcastings.com', '8370004037', '0'),
+('Shivalik', 48, 'GURU9669', 'GURU PRASAD', 'prodgm.saepl@shivalikcastings.com', '8370099883', '0'),
+('Shivalik', 48, 'kavin', 'Kavin K', 'kavi.krish0@gmail.com', 'null', '0'),
+('Shivalik', 48, 'JAISINGH', 'Jai Singh', 'jai.singh1138@gmail.com', '7891752264', '0'),
+('Shivalik', 48, 'Vinay agrawal', 'Vinay Agrawal', 'ed@shivalikcastings.com', '8370002014', '0'),
+('Shivalik', 48, 'SEILSandmanATS', 'Ashutosh Singhania', 'director@shivalikcastings.com', '9893281003', '0'),
+('Shivalik', 48, 'bikramsahu', 'Bikram Sahu', 'bikramsahu01@gmail.com', '7509226809', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Neco-Butibori', 49, 'necobutibori', 'Gopinath R', 'gopinath@mpminfosoft.com', '9655739398', '1'),
+('Neco-Butibori', 49, 'necouser', 'mark waugh', 'anandbabu0810@gmail.com', '', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('AIA Engineering', 50, 'aiauser', 'steve waugh', 'sandmanaia1@gmail.com', '9042927339', '0'),
+('AIA Engineering', 50, 'prashant', 'Prashant kulkarni', 'prashant.kulkarni@aiaengineering.com', '7203092751', '0'),
+('AIA Engineering', 50, 'AIA', 'Muralidharan M', 'murali161195@gmail.com', '7299114796', '1'),
+('AIA Engineering', 50, 'moulding.k1', 'Moulding K1', 'moulding.k1@aiaengineering.com', '7211197937', '0'),
+('AIA Engineering', 50, 'Qclab', 'Hitesh Dohare', 'lab.kerala@aiaengineering.com', '6359964009', '0'),
+('AIA Engineering', 50, 'Jitendra', 'Jitendra Patel', 'jitendra.patel@aiaengineering.com', '9723430298', '0'),
+('AIA Engineering', 50, 'VSHUHEGDE', 'Hegde Sir', 'hegde@aiaengineering.com', '9099911987', '0'),
+('AIA Engineering', 50, 'prod', 'Dhiru Solanki', 'dhiru.solanki@aiaengineering.com', '6359964022', '0'),
+('AIA Engineering', 50, 'dharmesh.tripathi', 'Dharmesh Tripathi', 'dharmesh.tripathi@aiaengineering.com', '8238023325', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Nelcast Pedapariya', 51, 'nelcastpedapariya', 'Gopinath R', 'sandmanmpm10@gmail.com', '9655739398', '1'),
+('Nelcast Pedapariya', 51, 'PALABS', 'Sandlab Ravindra.Y', 'palabs@nelcast.com', '8374266474', '0'),
+('Nelcast Pedapariya', 51, 'kiran@1975', 'Kiran Kumar', 'kiran@nelcast.com', '9392709833', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Munjal Kiriu', 52, 'Munjalkiriu', 'Murali Krishnan', 'sandmanmpm223@gmail.com', '9860486663', '1'),
+('Munjal Kiriu', 52, 'munjalkiriu1', 'Gopinath R', 'gopinath.nkl07@gmail.com', '9655739398', '0'),
+('Munjal Kiriu', 52, 'laboratory', 'Anil Mishra', 'laboratory@munjalkiriu.co.in', '+91 92891277209', '0'),
+('Munjal Kiriu', 52, '105200', 'BL Kumawat', 'blkumawat@munjalkiriu.co.in', '+91 9958130522', '0'),
+('Munjal Kiriu', 52, 'castingstd', 'Abhishek Tiwari', 'castingstdroom@munjalkiriu.co.in', '7048956565', '1'),
+('Munjal Kiriu', 52, 'Saravanan', 'Saravanan K', 'ksaravanan@munjalkiriu.co.in', '+91 9910048934', '0'),
+('Munjal Kiriu', 52, 'rajendra', 'Rajendra Kumar', 'rajendra@munjalkiriu.co.in', '+91 9971666474', '0'),
+('Munjal Kiriu', 52, 'G MADESWARAN', 'Madeswaran G', 'madeshwaran@munjalkiriu.co.in', '+91 9971090237', '0'),
+('Munjal Kiriu', 52, 'ko ishikawa', 'Ishikawa K', 'kishikawa@munjalkiriu.co.in', '+91 9205155966', '0'),
+('Munjal Kiriu', 52, 'somveersinghtanwar', 'Somveer Singh Tanwar', 'sstanwar@munjalkiriu.co.in', '+91 9821011655', '0'),
+('Munjal Kiriu', 52, '105180', 'K C Swain', 'kcswain@munjalkiriu.co.in', '+91 9650018085', '0'),
+('Munjal Kiriu', 52, 'Akojha', 'A K Ojha', 'akojha@munjalkiriu.co.in', '+91 9910035064', '0'),
+('Munjal Kiriu', 52, 'munjalSCADA', 'SCADA User', 'kconsistency@gmail.com', 'null', '0'),
+('Munjal Kiriu', 52, 'Devesh', 'Devesh Kumar', 'dkumar1@munjalkiriu.co.in', '9953468930', '0'),
+('Munjal Kiriu', 52, 'Anilkumar', 'Anil Kumar', 'akumar@munjalkiriu.co.in', '8800227309', '0'),
+('Munjal Kiriu', 52, 'MKIPL', 'Yoshimi Kawabuchi', 'kawabuchisandman@gmail.com', 'null', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Belgaum Ferrocast', 53, 'BelgaumFerrocast', 'Murali Ferrocast', 'muralimurali1617@gmail.com', 'null', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Sound Casting', 54, 'soundcastings', 'Rohit R', 'rohit@mpminfosoft.com', '8806664680', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('AICC', 55, 'Avijit Maity', 'AICC', 'avijit@mpminfosoft.com', '6297626449', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('AIW', 56, 'AIW', 'Sandman MPM1', 'sandmanmpm1@gmail.com', NULL, '1'),
+('AIW', 56, 'Anmol', 'Anmol Kawale', 'kawaleanmol9@gmail.com', '9545876835', '1'),
+('AIW', 56, 'Venkat', 'Venkatesan Ramani', 'venkatesanramani69@gmail.com', '8494940607', '0'),
+('AIW', 56, 'RDG', 'R . D Ganesan', 'r.d.ganesan@ashokiron.com', '9742260751', '0'),
+('AIW', 56, 'PrashantPatil', 'Prashant Patil', 'prashant50.pp@gmail.com', '8867257052', '0'),
+('AIW', 56, 'Sandeep', 'Sandeep Agasar', 'sandeepagasar111@gmail.com', '9361342611', '0'),
+('AIW', 56, 'Ravikumar N', 'Ravi Kumar', 'ravikumar.n@ashokiron.com', '9606054863', '0'),
+('AIW', 56, 'Dharanendra', 'Dharnendhar Shiragapur', 'dharanendra.shiragapur@ashokiron.com', '9742260859', '0'),
+('AIW', 56, 'VaibhavBhogan', 'Vaibhav Bhogan', 'bhoganvaibhav3.142@gmail.com', '7975228872', '0'),
+('AIW', 56, 'Atharv', 'Mahesh Sambari', 'p3.lab@ashokiron.com', '9481326923', '0'),
+('AIW', 56, 'basavarajmathapati349@gmail.com ', 'Basavaraj Mathapati', 'basavarajmathapati349@gmail.com', '9071110845', '0'),
+('AIW', 56, 'vaibhav Patil', 'Vaibhav Patil', 'vp390301@gmail.com', '8496968315', '0'),
+('AIW', 56, 'vaibhavpatil', 'Vaibhav Patil', 'vp28081993@gmail.com', '8496968315', '0'),
+('AIW', 56, 'kumar', 'Kumar Patil', 'kumar@ashokiron.com', '8494951081', '0'),
+('AIW', 56, 'Desai Rahul', 'Rahul Desai', 'desai.rahul99@gmail.com', NULL, '0'),
+('AIW', 56, 'shamailkhan', 'Shamail Khan', 'shamailkhan112@gmail.com', '9044786847', '0'),
+('AIW', 56, 'ramappa', 'Ramappa G', 'gramappa04@gmail.com', '9880335239', '0'),
+('AIW', 56, 'Sivarajan', 'Sivarajana R', 'r.sivarajan@ashokiron.com', '9741972324', '0'),
+('AIW', 56, 'vinayak', 'Vinayak Bhosale', 'vinayak.bhosale@ashokiron.com', NULL, '0'),
+('AIW', 56, 'ANAND', 'Anand Masaguppi', 'anandmasaguppi93@gmail.com', '9980706865', '0'),
+('AIW', 56, 'VINAYAK BADAVE', 'Mr. Vinayak Badave', 'p3.me@ashokiron.com', '9538615852', '0'),
+('AIW', 56, 'soni', 'Soni Pathak', 'soni.pathak@ashokiron.com', '9741872425', '0'),
+('AIW', 56, 'Anmol_K', 'Anmol Kawale', 'anmol.kawale@mpmindia.com', '8788378527', '0'),
+('AIW', 56, 'arati kadabi', 'Arati Kadabi', 'aratikadabi1999@gmail.com', '7026871528', '0'),
+('AIW', 56, 'Ankit01', 'Ankit Mohite', 'ankitmohite4410@gmail.com', '9923352303', '0'),
+('AIW', 56, 'Amrut police patil', 'Amrut Policepatil', 'amrutpatil4420@gmail.com', '7760904420', '0'),
+('AIW', 56, 'Sadroddinsha ', 'Sadroddin Sha', 'Sadroddinsha95@gmail.com', '9019885450', '0'),
+('AIW', 56, 'Abdul167', 'Abdul Mulla', 'abdul.abbu167@gmail.com', NULL, '0'),
+('AIW', 56, 'Jnaneshwar', 'Jnaneshwar Naik', 'naikjnaneshwar8@gmail.com', NULL, '0'),
+('AIW', 56, 'SandmanA', 'Sandman User', 'arshiya@mpminfosoft.com', NULL, '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Maxwell', 57, 'Maxwell', 'Muralidharan M', 'sandmanmpm2@gmail.com', NULL, '1'),
+('Maxwell', 57, 'gnana', 'Gnana Prakash', 'sandplant@maxwellcasting.com', '8754754958', '0'),
+('Maxwell', 57, 'shanmugavel G', 'Shanmugavel Mr.', 'ppc@maxwellcasting.com', NULL, '0'),
+('Maxwell', 57, 'Quality', 'Perumal Mr', 'quality@maxwellcasting.com', NULL, '0'),
+('Maxwell', 57, 'Uvaraj C', 'Uvaraj Mr', 'planthead@maxwellcasting.com', '9489900823', '0'),
+('Maxwell', 57, 'Makesh', 'Makesh Chandrasekhar', 'makesh@maxwellcasting.com', NULL, '0'),
+('Maxwell', 57, 'chandrasekaran', 'Chandrasekhar Mr', 'md@maxwellcasting.com', NULL, '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('ASAMA INDONESIA MANUFACTURING PT.', 58, 'ASAMA', 'Anand Babu', 'sandmanmpm3@gmail.com', '9042927339', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Chamberlin', 59, 'chamberlin', 'Sandman MPM 6', 'sandmanmpm20@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Kasturi Foundry', 60, 'Kasturi', 'Sandman MPM 3', 'sandmanmpm12@gmail.com', NULL, '1'),
+('Kasturi Foundry', 60, 'HSB', 'Hema Bedage', 'hemabedage03@gmail.com', '9075111211', '0'),
+('Kasturi Foundry', 60, 'nilesh patil', 'Nilesh Patil', 'nilesh.p@zanvargroup.com', '8600095658', '0'),
+('Kasturi Foundry', 60, 'Prakash M. Patil', 'Prakash M. Patil', 'prakash.patil@zanvargroup.com', '9767626775', '0'),
+('Kasturi Foundry', 60, 'prashant D', 'Prashant D Dhoolappanavar', 'prashant.dhoolappanavar@zanvargroup.com', '9960681233', '0'),
+('Kasturi Foundry', 60, 'sourabh', 'Sourabh Mirajkar', 'mirajkarsourabh@gmail.com', '7040179950', '0'),
+('Kasturi Foundry', 60, 'SSMANE', 'Swati Mane', 'kfplu1.fcalibration@zanvargroup.com', '8605045074', '0'),
+('Kasturi Foundry', 60, 'Madhura', 'Madhura Patil', 'kfplu1.lab@zanvargroup.com', '9168919744', '0'),
+('Kasturi Foundry', 60, 'D J Patil', 'D J Patil', 'DJ.patil@zanvargroup.com', '9689890577', '0'),
+('Kasturi Foundry', 60, 'MRKsandMan', 'Madhukar Kumbar', 'mrkumbhar@zanvargroup.com', '9049348477', '0'),
+('Kasturi Foundry', 60, 'Hodawadekar', 'Ashish Hodawadekar', 'ashish.hodawadekar@gmail.com', '9970803399', '0'),
+('Kasturi Foundry', 60, 'sandeepaparajkar', 'Sandeep Aparajkar', 'sandeepaparajkar@yahoo.in', '8983041087', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Castex Sapphire', 61, 'ram1babu', 'Ram Babu', 'tech.services@mpmindia.com', '7218148375', '0'),
+('Castex Sapphire', 61, 'sapphirelab', 'Sudhir Kumar', 'lab.sapphire@castextechnologies.com', '8107262368', '0'),
+('Castex Sapphire', 61, 'PINTU SINGH', 'Gurmeet Singh', 'fettling.bhwd@castextechnologies.com', '8696012941', '0'),
+('Castex Sapphire', 61, 'Mohan@sapphire', 'Manoj Singh', 'manoj.singh1@castextechnologies.com', '9649908149', '0'),
+('Castex Sapphire', 61, 'Raghav@001', 'Vinay Raghav', 'inspection.bhwd@castextechnologies.com', '9887645130', '0'),
+('Castex Sapphire', 61, 'Sapphire', 'Sandman MPM 6', 'sandmanmpm226@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('MCIE', 62, 'SHINDEMR', 'Shinde Mallikarjun', 'shinde.mallikarjun@cie-india.com', '7798939939', '0'),
+('MCIE', 62, 'satish kumar', 'Sathish Kumar', 'satishkumar95048472@gmail.com', '8080515552', '0'),
+('MCIE', 62, '8830940874', 'Mane Hemant', 'manehemant957@gmail.com', '8830940874', '0'),
+('MCIE', 62, 'PANKAJ', 'Akash Hegaje', 'hegajeakash07@gmail.com', '9011193691', '0'),
+('MCIE', 62, 'SANDESH PATIL', 'Sandesh Patil', 'patil.sandesh@cie-india.com', '9307103182', '0'),
+('MCIE', 62, 'Chandu1314', 'Chandrakant Waghmare', 'waghmarechandrakant554@gmail.com', '9322595477', '0'),
+('MCIE', 62, 'omshruti', 'Shrikant Naik', 'naik.shrikant@cie-india.com', '9359656536', '0'),
+('MCIE', 62, '23034066', 'Samadhan Rakhonde', 'rakhonde.samadhan@cie-india.com', '9423210958', '0'),
+('MCIE', 62, 'Sachin82', 'Sachin Devalekar', 'devalekar.sachin@cie-india.com', '9552504692', '0'),
+('MCIE', 62, 'SHK', 'Sharanappa Kyatanakeri', 'kyatanakeri.sharanappa@cie-india.com', '9657712172', '0'),
+('MCIE', 62, 'Santosh.Kulkarni', 'Santosh Kulkarni', 'kulkarni.santosh@cie-india.com', '9657712175', '0'),
+('MCIE', 62, 'SRR', 'Sudhakar Rane', 'rane.sudhakar@cie-india.com', '9657712182', '0'),
+('MCIE', 62, '800993', 'Arun Kulkarni', 'kulkarni.arun@cie-india.com', '9657712258', '0'),
+('MCIE', 62, 'sanapakash26@gmail', 'Akash Sanap', 'sanapakash26@gmail.com', '9673767883', '0'),
+('MCIE', 62, 'KISPOTTA.ASHISH@CIE-INDIA.COM', 'Ashish Kispotta', 'kispotta.ashish@cie-india.com', '9689386714', '0'),
+('MCIE', 62, 'sandlab-MCIE', 'Sachin Dhamankar', 'dhamankar.sachin@cie-india.com', '9767532052', '0'),
+('MCIE', 62, 'SGKATKAR', 'Sarjerao Katkar', 'katkar.sarjerao@cie-india.com', '9881038520', '0'),
+('MCIE', 62, 'Arif mulani', 'Arif Mulani', 'mulania555@gmail.com', '9978157111', '1'),
+('MCIE', 55, 'sanapakash26@gmail', 'Sanap Akash', 'sanapakash26@gmail.com', '7798939939', '0'),
+('MCIE', 55, 'sandlab-MCIE', 'Dhamankar Sachin', 'dhamankar.sachin@cie-india.com', '9657712172', '0'),
+('MCIE', 62, 'MCIE', 'Sandman MPM', 'sandmanmpm17@gmail.com', '9767532052', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Mahindra & Mahindra Limited', 63, '25005432', 'Akhilesh Yadav', '25005432@mahindra.com', '7219406601', '0'),
+('Mahindra & Mahindra Limited', 63, '213141', 'Siddharth Patil', '213141@mahindra.com', '7506941658', '0'),
+('Mahindra & Mahindra Limited', 63, 'Manishsand', 'Manish Thakur', '23147256@mahindra.com', '7710063130', '0'),
+('Mahindra & Mahindra Limited', 63, 'Sandipj', 'Sandip Jadhav', 'jadhav.sandip2@mahindra.com', '8169580176', '0'),
+('Mahindra & Mahindra Limited', 63, '23169975', 'Pankaj Kumar', '23169975@mahindra.com', '8454976444', '0'),
+('Mahindra & Mahindra Limited', 63, '25013254', 'Akshay Parte', 'parte.akshay@mahindra.com', '8600232306', '0'),
+('Mahindra & Mahindra Limited', 63, 'bhaskar', 'Bhaskar Magadi', '25019900@mahindra.com', '8732905101', '0'),
+('Mahindra & Mahindra Limited', 63, 'Ranjith@1994', 'Ranjith Palani', '25011125@mahindra.com', '8778233883', '0'),
+('Mahindra & Mahindra Limited', 63, 'Sharvarisangare', 'Sharvari Sangare', 'sangare.sharvari@mahindra.com', '8828681175', '0'),
+('Mahindra & Mahindra Limited', 63, 'NIRAJ KISHORE', 'Niraj Kishore', '23072361@mahindra.com', '9004702119', '0'),
+('Mahindra & Mahindra Limited', 63, '25012215', 'Rajesh Soni', '25012215@mahindra.com', '9042936805', '0'),
+('Mahindra & Mahindra Limited', 63, 'MNC', 'Manish Choudhary', '202357@mahindra.com', '9819945353', '0'),
+('Mahindra & Mahindra Limited', 63, '23113235', 'Sunil Sharma', '23113235@mahindra.com', '9967483235', '0'),
+('Mahindra & Mahindra Limited', 63, 'Sandeep Rege', 'Sandeep Rege', 'rege.sandeep@mahindra.com', '9967530196', '0'),
+('Mahindra & Mahindra Limited', 63, 'MahindraK', 'Manoj Raut', 'manoj@mpminfosoft.com', '', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Caspro', 64, 'Caspro', 'Venkatesan Ramani', 'srinivasan@mpminfosoft.com', '7892170636', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Mahindra&MahindraK2', 65, 'MMK', 'Sandman Mahindra', 'sandmanmahindra@gmail.com', '', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Shree Raj Castech Pvt. Ltd.', 66,  'Shreeraj',  'DigiSmart mpm1', 'digismartmpm1@gmail.com', '', '1'),
+('Shree Raj Castech Pvt. Ltd.', 66, 'Gulab Baviskar', 'Gulab Baviskar', 'qc@shreerajcastech.com', '9099065510', '0'),
+('Shree Raj Castech Pvt. Ltd.', 66, 'Sanjay Patil', 'Sanjay Patil', 'foundry@shreerajcastech.com', '9099065514', '0'),
+('Shree Raj Castech Pvt. Ltd.', 66, 'Anil Mishra', 'Anil Mishra', 'srcplfettling@gmail.com', '9099065515', '1'),
+('Shree Raj Castech Pvt. Ltd.', 66, 'Kevin Ribadiya', 'Kevin Ribadiya', 'srcplmoulding@gmail.com', '9825053597', '0'),
+('Shree Raj Castech Pvt. Ltd.', 66, 'Anuj Patel', 'Anuj Patel', 'srcplmelting@gmail.com', '9099065463', '0'),
+('Shree Raj Castech Pvt. Ltd.', 66, 'Rohit Somani', 'Rohit Somani', 'lab@shreerajcastech.com', '9099065410', '0'),
+('Shree Raj Castech Pvt. Ltd.', 66, 'Vishal Ghumaliya', 'Vishal Ghumaliya', 'hr@shreerajcastech.com', '9099065507', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Hariom Percsion', 67, 'Hariom', 'Venkatesan R', 'digismartmpm2@gmail.com', '', '1'),
+('Hariom Percsion', 67, 'AVNISH141', 'Avnish Singh Chouhan', 'Avnishchauhan8@gmail.com', '', '0'),
+('Hariom Percsion', 67, 'GAURAV516', 'Gaurav Singh', 'chauhangaurav516@gmail.com', '', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Vishwakarma Automotive Pvt.', 68, 'Vishwakarma',  'DigiSmart Vishwakarma', 'digismartmpm3@gmail.com', '', '1'),
+('Vishwakarma Automotive Pvt.', 68, 'Shiv1494',  'Govind Sharma', 'labvapl54@gmail.com', '9455518773', '0'),
+('Vishwakarma Automotive Pvt.', 68, 'rajeshkumar', 'Rajesh Kumar', 'quality@vaplauto.com', '', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Shakambhari', 69, 'Shakambhari', 'DigiSmart Shakambhari', 'digismartmpm4@gmail.com', '', '1'),
+('Shakambhari', 69, 'HARENDRA KUMAR', 'Harendra Kumar', 'sm.labsot@gagangroup.com', '8239322413', '0'),
+('Shakambhari', 69, 'lakshmikanta',  'Lakshmi Kant Sou', 'tpm.fd@gagangroup.com', '7003899213', '0'),
+('Shakambhari', 69, 'Tanay123', 'Tanay Mukherjee', 'production.sot@gagangroup.com', '9064107197', '0'),
+('Shakambhari', 69, 'Suman123', 'Suman Sam', 'sandplant.sot@gagangroup.com', '7001877434', '0'),
+('Shakambhari', 69, 'Partha Roy', 'Partha Roy', 'qa3@gagangroup.com', '8918476556', '0'),
+('Shakambhari', 69, 'Nairrit 123', 'Nairrit Biswas', 'mould.sot@gagangroup.com', '7550873837', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Vishal Manufacturer Pvt. Ltd.', 70, 'Vishal', 'DigiSmart Vishal', 'uday.g@mpminfosoft.com', '', '1'),
+('Vishal Manufacturer Pvt. Ltd.', 70, 'vmplmpm', 'Pranav Bhai', 'qa@vishalfoundry.com', '6354482556', '0'),
+('Vishal Manufacturer Pvt. Ltd.', 70, 'vmplproduction', 'Daslaniya Sagar', 'production@vishalfoundry.com', '9033687540', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Pooja Auto Cast', 77, 'Pooja', 'Sandman Pooja', 'c.gayathri@mpminfosoft.com', '', '1'),
+('Pooja Auto Cast', 77, 'Nilesh Sangole ',  'Nilesh Sangole', 'nilesh.sangole@poojatechnocast.com', '9033904159', '0'),
+('Pooja Auto Cast', 77, 'Biswajit', 'Biswajit Das', 'biswajitdas772277@gmail.com', '9104946138', '0'),
+('Pooja Auto Cast', 77, 'Khushali paradkar ', 'Kushali Paradkar', 'khushaliparadkar17@gmail.com', '9694448565', '0'),
+('Pooja Auto Cast', 77, 'PAIGK', 'Ganesh Kachgunde', 'ganeshkachgunde80@gmail.com', '7620002525', '0'),
+('Pooja Auto Cast', 77, 'Shiv prakash', 'Shiv Prakash', 'shiveprakash19961@gmail.com', '7755821077', '0'),
+('Pooja Auto Cast', 77, 'Rakibul', 'Rakibul Islam', 'Dasrakibul191@gmail.com', '7487929931', '0'),
+('Pooja Auto Cast', 77, 'Vinayak kaahid', 'Vinayak Kashid', 'kashidv07@gmail.com', '9021543653', '0'),
+('Pooja Auto Cast', 77, 'Dheera', 'Dheera Biswal', 'dheerabiswal@gmail.com', '9937036125', '0'),
+('Pooja Auto Cast', 77, 'parmar', 'Hardik Parmar', 'hp92656@gmail.com', '9558954993', '0'),
+('Pooja Auto Cast', 77, 'Rajendra86@gmail.com', 'Rajendra Selot', 'selotrajendra86@gmail.com', '9099645758', '0'),
+('Pooja Auto Cast', 77, 'Upendar', 'Upender Prajapati', 'upenderprajapati18@gmail.com', '8780398263', '0'),
+('Pooja Auto Cast', 77, 'rajkishorpradhan0143@gmail.com', 'Rajkishor Pradhan', 'rajkishorpradhan0143@gmail.com', '7972229418', '0'),
+('Pooja Auto Cast', 77, 'Karan',  'Karan Sondhiya', 'sondhiyakaran320@gmail.com', '', '0'),
+('Pooja Auto Cast', 77, 'Manish moliya', 'Manish Moliya', 'purchase@poojatechnocast.com', '9537922244', '0'),
+('Pooja Auto Cast', 77, 'PAI@RAJESH', 'Rajesh Kumbhar', 'rkumbhar914@gmail.com', '9970830882', '0'),
+('Pooja Auto Cast', 77, 'Sanjay teraiya ', 'Sanjay Teraiya', 'sanjayteraiya13@gmail.com', '8401061822', '0'),
+('Pooja Auto Cast', 77, 'Sabbir Hussain ', 'Sabbir Hussain', 'sabbirhussain43771@gmail.com', '7002728358', '0'),
+('Pooja Auto Cast', 77, 'AMOLGAIKWAD', 'Amol Gaikwad', 'amolg9246@gmail.com', '9834465905', '0'),
+('Pooja Auto Cast', 77, 'Vinod kumar', 'Vinod Kumar', 'vksaini549@gmail.com', '7009084241', '0'),
+('Pooja Auto Cast', 77, 'Narendar', 'Narendrabhai Dafda', 'narendrabhaidafda8192@gmail.com', '8469174121', '0'),
+('Pooja Auto Cast', 77, 'Pathak1993', 'Rahul Pathak', 'rahulpathak010@gmail.com', '9611494099', '0'),
+('Pooja Auto Cast', 77, 'Narendra.K.Dhulakshe', 'Narendra Dhulakshe', 'dhulakshe16859@gmail.com', '9510085449', '0'),
+('Pooja Auto Cast', 77, 'pradeepjangir902@gmail.com', 'Pradeep Kumar Jangir', 'pradeepjangir902@gmail.com', '9079448559', '0'),
+('Pooja Auto Cast', 77, 'yuvrajsahare', 'Yuvraj Sahare', 'yuvrajsahare@gmail.com', '8975607951', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('CadillacUS', 78, 'CadillacUS', 'Sandman Cadillac', 'sandmancadillac@gmail.com', '', '1'),
+('CadillacUS', 78, 'CCI', 'John Gatewood', 'jgatewood@cadillaccasting.com', '+1 231-429-4845', '0'),
+('CadillacUS', 78, 'Blucas', 'Brooks Lucas', 'blucas@cadillaccasting.com', '', '1'),
+('CadillacUS', 78, 'kklein', 'Kyle Klein', 'kklein@cadillaccasting.com', '', '0'),
+('CadillacUS', 78, 'mschafer', 'Mary Schafer', 'mschafer@cadillaccasting.com', '', '0'),
+('CadillacUS', 78, 'jowens@cadillaccasting.com', 'Jason Owens', 'jowens@cadillaccasting.com', '', '0'),
+('CadillacUS', 78, 'Eric Watrous', 'Eric Watrous', 'Ewatrous@cadillaccasting.com', '', '0'),
+('CadillacUS', 78, 'cadillac2024', 'Sand Lab', 'slab@cadillaccasting.com', '', '0'),
+('CadillacUS', 78, 'desmondp', 'Desmond Pow', 'dpow@cadillaccasting.com', '', '0'),
+('CadillacUS', 78, 'Cadillacuser', 'Cadillac User', 'usercadillac@gmail.com', '', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'RBA', 'Sandman RBA', 'sandmanrbaferro@gmail.com', '', '1'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'Pradip Banerjee', 'Pradeep Banerjee', 'pradeep@rbaferro.com', '9830555552', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'Dipankar Biswas', 'Dipankar Biswas', 'dipankar@rbaferro.com', '9874472805', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'harsh', 'Harsh Agarwal', 'harsh@rbaferro.com', '9830007079', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'sayan1367', 'Sayan Biswas', 'sayan@rbaferro.com', '8145019719', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'rktiwari', 'Rajkumar Tiwari', 'rktiwari897@gmail.com', '7890756008', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'Abhijit', 'Abhijit Das', 'abhijit@rbaferro.com', '9883228577', '1'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'Rajrii26', 'Rajdeep Chatterjee', 'production@rbaferro.com', '7001560953', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'santanu', 'Santanu Chattopadhyay', 'melting@rbaferro.com', '9038684144', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'bacchu', 'Bacchu Jana', 'bacchu.jana@rbaferro.com', '9339036170', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'SAND MAN', 'Chinmoy Samanta', 'chinmoy@rbaferro.com', '9874390284', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'sanchita sadhukhan', 'Sanchita Sadhukhan', 'sanchita@rbaferro.com', '7699059842', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'rkp', 'RajKumar Pal', 'rajauto2011@gmail.com', '9007460101', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'subhrapapaipatra', 'Subhrasankha Patra', 'subhrapapaipatra@gmail.com', '9748428078', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'rajesh', 'Rajesh Kumar', 'rajesh.kumar@mpmindia.com', '8789889164', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'Saddam', 'Saddam Mollah', 'saddam@rbaferro.com', '9038660686', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'PATTERN SHOP', 'Pattern Shop', 'patternshop@rbaferro.com', '8013127911', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'SUDIP SAHANA', 'Sudip Sahana', 'sudip.sahana@rbaferro.com', '', '0'),
+('RBA FERRO INDUSTRIES PRIVATE LIMITED', 79, 'Rbauser', 'Sandman RBA', 'sandmanrba@gmail.com', '', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('MCIE2', 80, 'dhananjaysandman', 'Dhananjay More', 'more.dhananjay@cie-india.com', '9545339232', '0'),
+('MCIE2', 80, 'CIE', 'Sandman Mcie', 'mcie2sandman@gmail.com', '', '1'),
+('MCIE2', 80, 'mubaraksabkhan', 'Sabkhan Mubarak', 'sabkhan.mubarak@cie-india.com', '', '0'),
+('MCIE2', 80, 'sarukade', 'Rukade SajjanKumar', 'rukade.sajjankumar@cie-india.com', '', '0'),
+('MCIE2', 80, 'VSD', 'Dandamani Vijay', 'dandamani.vijay@cie-india.com', '', '0'),
+('MCIE2', 80, 'SHIVAJI2200', 'Shivaji Waghmare', 'WAGHMARE.SHIVAJI@cie-india.com', '9765382200', '0'),
+('MCIE2', 80, 'Somnath', 'Somanath Navatre', 'navatre.somnath@cie-india.com', '9850136921', '0'),
+('MCIE2', 80, 'Ramteke', 'Ramteke Narayan', 'ramteke.narayan@cie-india.com', '', '0'),
+('MCIE2', 80, 'SandmanC', 'Sandman User', 'ciesandman@gmail.com', '', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('MPM PVT LTD (1)', 81, 'MPMtrial', 'Venkatesan Ramani', 'trialsandman@gmail.com', '', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Neosym Industry Limited', 1, 'neosym', 'Genuser Genuser', 'v2sandman@gmail.com', '', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('TATA MOTORS', 3, 'demo', 'Murali Krishnan', 'murali@mpminfosoft.com', '', '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Brakes India Limited', 4, 'brakes', 'Murali Krishnan', 'sandman02@mpmindia.com', '', '1'),
+('Brakes India Limited', 4, 'sandplant', 'Ganesan M', 'ganesan.m@brakesindia.co.in', '9843828608', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Amtek India Ltd', 6, 'amtek', 'Sandman MPM 2', 'sandmanmpm18@gmail.com', '', '1'),
+('Amtek India Ltd', 6, 'qa', 'Asha', 'qms.diamond@castextechnologies.com', '9413873162', '0'),
+('Amtek India Ltd', 6, 'jagmendra', 'Jagmendra Singh', 'jagmendra@castextechnologies.com', '', '0'),
+('Amtek India Ltd', 6, 'Amtek User', 'Amtek User', 'muralidharanm1611@gmail.com', '', '0'),
+('Amtek India Ltd', 6, 'shukla', 'SN Shukla', 'sn.shukla@castextechnologies.com', '7976954225', '0'),
+('Amtek India Ltd', 6, 'ajay', 'Ajay Kumar', 'lab.diamond@castextechnologies.com', '9772801292', '0'),
+('Amtek India Ltd', 6, 'SCADAAmtek', 'SCADA Amtek', 'scadaamtek@gmail.com', '', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('TATA Motors Chinchwad', 7, 'tml', 'Riya Chopkar', 'riya.chopkar@yahoo.com', '9423176744', '1'),
+('TATA Motors Chinchwad', 7, 'kirit', 'Kirit Bandi', 'kirit.bandi@tatamotors.com', '8308848395', '0'),
+('TATA Motors Chinchwad', 7, 'mmk52423', 'Makarand Kulkarni', 'mmk52423@tatamotors.com', '7276097955', '0'),
+('TATA Motors Chinchwad', 7, 'ppj52835', 'Prashant Joshi', 'joshi.prashant@tatamotors.com', '7276074643', '0'),
+('TATA Motors Chinchwad', 7, 'itssnm', 'Sandeep Munshi', 'sandeep.munshi@tatamotors.com', '7276098808', '0'),
+('TATA Motors Chinchwad', 7, 'SSS662278', 'Shubham Srivastav', 'sss662278@tatamotors.com', '7276052695', '0'),
+('TATA Motors Chinchwad', 7, 'sbs149030', 'Sanjay Shete', 'sbs149030@tatamotors.com', '8237005284', '0'),
+('TATA Motors Chinchwad', 7, 'ssy149029', 'Suresh Yadav', 'ssy149029@tatamotors.com', '8237005202', '0'),
+('TATA Motors Chinchwad', 7, 'pmb', 'Prashant Bharade', 'pmb654110@tatamotors.com', '9657712526', '0');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Shanthala Spherocast Private Limited', 8, 'shanthala', 'Murali Krishnan', 'shanthalaspherocast.2014@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Menon and Menon Ltd', 9, 'menon&menon', 'Murali Krishnan', 'sandman01@mpmindia.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('Sakthi Auto Component Limited', 10, 'shaktiauto', 'Murali Krishnan', 'shaktiauto.2014@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('PSG & SONS CHARITIES', 11, 'psgfoundry', 'Murali Krishnan', 'psgfoundry.2014@gmail.com', NULL, '1');
+
+INSERT INTO foundries (foundry_name, pkey, user_name, person_name, email, phone, is_admin) VALUES
+('MUNJAL KIRIU', 12, 'Avil Tyagi', 'Avil Tyagi', 'aviltyagi@ricoauto.in', '9910570200', 0);
