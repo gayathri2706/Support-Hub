@@ -496,11 +496,14 @@ def new_ticket():
     """
     try:
         # Get URL parameters
-        foundry = request.args.get('foundry')
+        foundry = request.args.get('foundry') or request.args.get('foundry_name')  # Accept both parameter names
         username = request.args.get('user') or request.args.get('username')
-
+        
         if not username:
             return "Missing username parameter", 400
+            
+        if not foundry:
+            return "Foundry not specified", 400
 
         # Query for available case types for the ticket
         case_types = db.session.execute(text("SELECT id, name FROM case_types ORDER BY id")).fetchall()
@@ -755,7 +758,7 @@ def create_ticket():
             foundry_name = request.form.get('foundry_name')
             name = request.form.get('name')
             email = request.form.get('email')
-            phone = request.form.get('phone', '')
+            phone = request.form.get('phone', '')  # We'll still get this but won't use it in SQL
             case_type_id = request.form.get('helpTopic')
             issue_description = request.form.get('issueDescription')
             priority = request.form.get('priorityLevel')
@@ -792,22 +795,22 @@ def create_ticket():
                     file.save(file_path)
                     attachment_filename = new_filename
             
-            # Insert new ticket into database
+            # FIXED: Remove 'phone' from the SQL insert query
             insert_query = text("""
                 INSERT INTO tickets 
-                (ticket_id, foundry_name, name, email, phone, issue, issue_description, 
+                (ticket_id, foundry_name, name, email, issue, issue_description, 
                 priority, status, attachment_file, date_created, last_updated)
                 VALUES 
-                (:ticket_id, :foundry_name, :name, :email, :phone, :issue, :issue_description,
+                (:ticket_id, :foundry_name, :name, :email, :issue, :issue_description,
                 :priority, 'Open', :attachment_file, NOW(), NOW())
             """)
             
+            # FIXED: Remove 'phone' parameter from the execution
             db.session.execute(insert_query, {
                 'ticket_id': ticket_id,
                 'foundry_name': foundry_name,
                 'name': name,
                 'email': email,
-                'phone': phone,
                 'issue': case_type_name,
                 'issue_description': issue_description,
                 'priority': priority,
@@ -833,7 +836,7 @@ def create_ticket():
             db.session.rollback()
             print(f"Error creating ticket: {str(e)}")
             return jsonify({"success": False, "message": f"Error creating ticket: {str(e)}"}), 500
-        
+             
 def send_ticket_confirmation_email(foundry, user_email, ticket_id, user_name, issue, description, priority):
     try:
         admin_results = db.session.execute(text("SELECT email FROM assign_to WHERE is_admin = TRUE")).fetchall()
@@ -1016,21 +1019,28 @@ def update_ticket_status(ticket_id):
 @app.route('/api/chart-data')
 def chart_data():
     """Fetch ticket data and return JSON for charts."""
+    foundry_name = request.args.get('foundry_name')
 
-    # Get Case Type Distribution
-    case_type_query = text("SELECT issue, COUNT(*) FROM tickets GROUP BY issue")
-    case_type_results = db.session.execute(case_type_query).fetchall()
+    if foundry_name:
+        # Filter by foundry
+        case_type_query = text("SELECT issue, COUNT(*) FROM tickets WHERE foundry_name = :foundry GROUP BY issue")
+        case_type_results = db.session.execute(case_type_query, {'foundry': foundry_name}).fetchall()
+        priority_query = text("SELECT priority, COUNT(*) FROM tickets WHERE foundry_name = :foundry GROUP BY priority")
+        priority_results = db.session.execute(priority_query, {'foundry': foundry_name}).fetchall()
+    else:
+        case_type_query = text("SELECT issue, COUNT(*) FROM tickets GROUP BY issue")
+        case_type_results = db.session.execute(case_type_query).fetchall()
+        priority_query = text("SELECT priority, COUNT(*) FROM tickets GROUP BY priority")
+        priority_results = db.session.execute(priority_query).fetchall()
+
     case_type_data = [[row[0], row[1]] for row in case_type_results]
-
-    # Get Priority Distribution
-    priority_query = text("SELECT priority, COUNT(*) FROM tickets GROUP BY priority")
-    priority_results = db.session.execute(priority_query).fetchall()
     priority_data = [[row[0], row[1]] for row in priority_results]
 
     return jsonify({
         "case_types": case_type_data,
         "priority": priority_data
     })
+
 
 @app.route('/case-types')
 def case_types():
