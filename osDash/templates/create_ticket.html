@@ -11,9 +11,10 @@ Create Ticket
         <a href="/?user={{ current_user.username }}" class="btn btn-secondary">← Back</a>
     </div>
 
-    <form id="ticketForm">
+   <form id="ticketForm" action="/create_ticket" method="POST" enctype="multipart/form-data">
+
         <!-- Hidden User Name Field -->
-        <input type="hidden" name="user_name" id="user_name" value="">
+        <input type="hidden" name="username" id="user_name" value="">
 
         <!-- Foundry Selection -->
         <div class="form-row">
@@ -41,7 +42,6 @@ Create Ticket
             <!-- dropdown hidden by default -->
             <select id="foundryNameDropdown" name="name" class="form-select equal-input" style="display: none;"></select>
         </div>
-
 
         <!-- Email (Auto-filled) -->
         <div class="form-row">
@@ -91,7 +91,7 @@ Create Ticket
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" id="submitButton">Submit</button>
+            <button type="submit">Submit</button>
     </form>
 
 <script>
@@ -248,54 +248,95 @@ document.addEventListener("DOMContentLoaded", async function () {
         console.error("Error fetching foundry details:", error);
     }
 
-    // Add form submission handler
+        // Add form submission handler
     ticketForm.addEventListener("submit", async function(e) {
         e.preventDefault();
         
-        // Validate form
+        // Make sure we stop here if the form is invalid
+        if (!this.checkValidity()) {
+            this.reportValidity();
+            return;
+
+        }
+
         const foundryName = document.querySelector('[name="foundry_name"]').value;
         const name = nameInput.style.display !== "none" ? nameInput.value : nameDropdown.value;
         const email = emailInput.value;
+        const phone = phoneInput.value;
         const caseType = document.getElementById("helpTopic").value;
         const description = document.getElementById("issueDescription").value;
         const priority = document.getElementById("priorityLevel").value;
-        
-        if (!foundryName || !name || !email || !caseType || !description || !priority) {
-            alert("Please fill in all required fields");
+        const attachment = document.getElementById("attachment").files[0];
+
+        // Basic validation
+        if (!foundryName || !name || !email || !phone || !caseType || !description || !priority) {
+            alert("Please fill in all required fields.");
             return;
         }
-        
-        // Create FormData object
-        const formData = new FormData(this);
-        
-        // Add the file if present
-        const fileInput = document.getElementById("attachment");
-        if (fileInput.files.length > 0) {
-            formData.append("attachment_file", fileInput.files[0]);
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append("foundry_name", foundryName);
+        formData.append("name", name);
+        formData.append("email", email);
+        formData.append("phone", phone);
+        formData.append("helpTopic", caseType);
+        formData.append("issueDescription", description);
+        formData.append("priorityLevel", priority);
+        // Change to match what the server expects
+        formData.append("username", userNameField.value);
+        if (attachment) {
+            formData.append("attachment_file", attachment);
         }
-        
+
         try {
-            // Send the ticket data to the server
             const response = await fetch("/create_ticket", {
                 method: "POST",
                 body: formData
             });
-            
+
             const result = await response.json();
-            
-            if (result.success) {
-                alert(`Ticket created successfully! Your ticket ID is: ${result.ticket_id}`);
-                // Redirect back to the home page
-                window.location.href = `/?user=${encodeURIComponent(username)}`;
+
+            if (response.ok) {
+                alert("Ticket created successfully!");
+                ticketForm.reset();
+                window.location.href = `/?user=${userNameField.value}`;  // Keep redirect to homepage
             } else {
-                alert(`Error creating ticket: ${result.message || "Unknown error"}`);
+                alert(result.error || "Error submitting ticket.");
             }
         } catch (error) {
-            console.error("Error submitting form:", error);
-            alert("An error occurred while creating the ticket. Please try again.");
+            console.error("Submission error:", error);
+            alert("Failed to submit ticket. Please try again.");
         }
     });
 });
-</script>
 
+document.getElementById('ticketForm').addEventListener('submit', async function (event) {
+    event.preventDefault(); // Stop normal submission
+
+    const form = event.target;
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch('/create_ticket', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(result.message);
+            // Redirect to dashboard/home with user name
+            const username = document.getElementById("user_name").value;
+            window.location.href = "/?user=" + encodeURIComponent(username);
+        } else {
+            alert('Ticket creation failed: ' + (result.message || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error('Error:', err);
+        alert('Something went wrong.');
+    }
+});
+</script>
 {% endblock %}
