@@ -304,24 +304,23 @@ def assign_ticket(ticket_id):
 
         # Fetch assignee details
         assignee = db.session.execute(
-            text("SELECT name, email FROM assign_to WHERE id = :id"),
+            text("SELECT name FROM assign_to WHERE id = :id"),
             {'id': assignee_id}
         ).fetchone()
 
         if not assignee:
             return jsonify({'success': False, 'message': 'Invalid assignee selected.'}), 400
 
-        assignee_name, assignee_email = assignee
+        assignee_name = assignee[0]
 
-        # Update ticket assignment
+        # Update ticket assignment WITHOUT assign_email
         query = text("""
             UPDATE tickets
-            SET assign_to = :name, assign_email = :email, comments = :comment
+            SET assign_to = :name, comments = :comment
             WHERE ticket_id = :ticket_id
         """)
         db.session.execute(query, {
             'name': assignee_name,
-            'email': assignee_email,
             'comment': comment,
             'ticket_id': ticket_id
         })
@@ -330,6 +329,7 @@ def assign_ticket(ticket_id):
         return jsonify({'success': True, 'message': 'Ticket assigned successfully!'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
     
 @app.route('/api/foundry/user/<foundry>/<username>', methods=['GET'])
 def get_user_details(foundry, username):
