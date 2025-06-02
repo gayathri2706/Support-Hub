@@ -472,11 +472,15 @@ Dashboard
             .catch(error => console.error('Error updating status:', error));
     }
 
-   async function fetchChartData() {
+async function fetchChartData() {
     try {
-        const foundryName = "{{ foundry }}";  // Passed from Flask
+        const rawFoundry = "{{ foundry }}";
+        const foundryName = rawFoundry.toLowerCase() === "admin" ? "all" : rawFoundry;
         const response = await fetch(`/api/chart-data?foundry_name=${encodeURIComponent(foundryName)}`);
         const data = await response.json();
+
+        console.log("Case Types data:", data.case_types);
+        console.log("Priority data:", data.priority);
 
         renderCaseTypeChart(data.case_types);
         renderPriorityChart(data.priority);
