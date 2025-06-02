@@ -1018,23 +1018,42 @@ def update_ticket_status(ticket_id):
 
 @app.route('/api/chart-data')
 def chart_data():
-    """Fetch ticket data and return JSON for charts."""
-    foundry_name = request.args.get('foundry_name')
+    foundry_name = request.args.get('foundry_name', '').lower()
 
-    if foundry_name:
-        # Filter by foundry
-        case_type_query = text("SELECT issue, COUNT(*) FROM tickets WHERE foundry_name = :foundry GROUP BY issue")
+    # Treat 'admin' or 'all' as all tickets (no filtering)
+    if foundry_name and foundry_name not in ['admin', 'all']:
+        case_type_query = text("""
+            SELECT issue, COUNT(*) 
+            FROM tickets 
+            WHERE foundry_name = :foundry 
+            GROUP BY issue
+        """)
         case_type_results = db.session.execute(case_type_query, {'foundry': foundry_name}).fetchall()
-        priority_query = text("SELECT priority, COUNT(*) FROM tickets WHERE foundry_name = :foundry GROUP BY priority")
+
+        priority_query = text("""
+            SELECT priority, COUNT(*) 
+            FROM tickets 
+            WHERE foundry_name = :foundry 
+            GROUP BY priority
+        """)
         priority_results = db.session.execute(priority_query, {'foundry': foundry_name}).fetchall()
     else:
-        case_type_query = text("SELECT issue, COUNT(*) FROM tickets GROUP BY issue")
+        case_type_query = text("""
+            SELECT issue, COUNT(*) 
+            FROM tickets 
+            GROUP BY issue
+        """)
         case_type_results = db.session.execute(case_type_query).fetchall()
-        priority_query = text("SELECT priority, COUNT(*) FROM tickets GROUP BY priority")
+
+        priority_query = text("""
+            SELECT priority, COUNT(*) 
+            FROM tickets 
+            GROUP BY priority
+        """)
         priority_results = db.session.execute(priority_query).fetchall()
 
-    case_type_data = [[row[0], row[1]] for row in case_type_results]
-    priority_data = [[row[0], row[1]] for row in priority_results]
+    case_type_data = [{"name": row[0], "y": row[1]} for row in case_type_results]
+    priority_data = [{"name": row[0], "y": row[1]} for row in priority_results]
 
     return jsonify({
         "case_types": case_type_data,
