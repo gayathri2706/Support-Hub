@@ -293,42 +293,45 @@ def get_assignable_users():
 
 @app.route('/api/tickets/<ticket_id>/assign', methods=['POST'])
 def assign_ticket(ticket_id):
-    """Assign a ticket to a user and update the database."""
-    try:
-        data = request.json
-        assignee_id = data.get('assignee_id')
-        comment = data.get('comment')
+    data = request.json
+    assignee_id = data.get('assignee_id')
+    comment = data.get('comment')
 
-        if not assignee_id or not comment:
-            return jsonify({'success': False, 'message': 'All fields are required.'}), 400
+    if not assignee_id or not comment:
+        return jsonify({'success': False, 'message': 'All fields are required.'}), 400
 
-        # Fetch assignee details
-        assignee = db.session.execute(
-            text("SELECT name FROM assign_to WHERE id = :id"),
-            {'id': assignee_id}
-        ).fetchone()
+    assignee = db.session.execute(
+        text("SELECT name, email FROM assign_to WHERE id = :id"),
+        {'id': assignee_id}
+    ).fetchone()
 
-        if not assignee:
-            return jsonify({'success': False, 'message': 'Invalid assignee selected.'}), 400
+    if not assignee:
+        return jsonify({'success': False, 'message': 'Invalid assignee selected.'}), 400
 
-        assignee_name = assignee[0]
+    assignee_name, assignee_email = assignee
 
-        # Update ticket assignment WITHOUT assign_email
-        query = text("""
-            UPDATE tickets
-            SET assign_to = :name, comments = :comment
-            WHERE ticket_id = :ticket_id
-        """)
-        db.session.execute(query, {
-            'name': assignee_name,
-            'comment': comment,
-            'ticket_id': ticket_id
-        })
-        db.session.commit()
+    # Update ticket
+    query = text("""
+        UPDATE tickets
+        SET assign_to = :name, comments = :comment
+        WHERE ticket_id = :ticket_id
+    """)
+    db.session.execute(query, {
+        'name': assignee_name,
+        'comment': comment,
+        'ticket_id': ticket_id
+    })
+    db.session.commit()
 
-        return jsonify({'success': True, 'message': 'Ticket assigned successfully!'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+    # Send email async
+    msg = Message(
+        subject=f"Ticket #{ticket_id} Assigned to You",
+        recipients=[assignee_email],
+        body=f"Hello {assignee_name},\n\nYou have been assigned a new ticket.\n\nTicket ID: {ticket_id}\nComment: {comment}\n\nPlease log in to the system to review and respond.\n\nRegards,\nSupport Hub"
+    )
+    threading.Thread(target=send_email_async, args=(app, msg)).start()
+
+    return jsonify({'success': True, 'message': 'Ticket assigned and email sent successfully!'})
 
     
 @app.route('/api/foundry/user/<foundry>/<username>', methods=['GET'])
