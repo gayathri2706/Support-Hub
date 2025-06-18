@@ -5,20 +5,20 @@
     <div class="d-flex align-items-center gap-2">
         <h4 class="mb-0"><strong>Support Hub</strong></h4>
         {% if current_user.username == "admin" %}
-            <a href="/case-types" class="btn" title="Manage Case Types">
+            <a href="/supporthub/case-types" class="btn" title="Manage Case Types">
                 <i class="bi bi-gear-fill"></i>
             </a>
-            <a href="/assign-to" class="btn" title="Manage Assign To">
+            <a href="/supporthub/assign-to" class="btn" title="Manage Assign To">
                 <i class="bi bi-person-fill-gear"></i>
             </a>
-            <a href="/user-management" class="btn" title="User Management">
+            <a href="/supporthub/user-management" class="btn" title="User Management">
                 <i class="bi bi-people-fill"></i>
             </a>
             
         {% endif %}
     </div>
     {% if current_user and current_user.is_admin %}
-        <a href="/dashboard?user={{ current_user.username }}" class="btn btn-primary">Dashboard</a>
+        <a href="/supporthub/dashboard?user={{ current_user.username }}" class="btn btn-primary">Dashboard</a>
     {% endif %}
 
 
@@ -64,9 +64,9 @@
             <small class="text-muted"><em>Fill the form here, we will get back to you within 24 hours.</em></small>
         </div>
 
-        <a href="#" id="openTicketButton" class="btn btn-danger">Open Ticket</a>
-
-              </div>
+        <!-- In your template file -->
+         <a href="#" id="openTicketButton" class="btn btn-danger" data-username="{{ current_user.username }}">Open Ticket</a>
+        </div>
 
     <!-- Tickets Table -->
     <div class="table-container">
@@ -115,7 +115,7 @@
                             <!-- Resolved File Section -->
                             {% if ticket.resolved_file %}
                                 <!-- Download Resolved File -->
-                                <a href="/api/tickets/{{ ticket.ticket_id }}/file" download class="btn btn-sm btn-outline-success">
+                                <a href="/supporthub/api/tickets/{{ ticket.ticket_id }}/file" download class="btn btn-sm btn-outline-success">
                                     <i class="bi bi-download" title="Download Resolved File"></i>
                                 </a>
                             {% endif %}
@@ -157,7 +157,7 @@
 <div class="modal-overlay" onclick="closeFeedbackModal()"></div>
 <div class="feedback-modal rounded p-4 bg-light">
     <h2 class="text-primary">Customer Feedback</h2>
-    <form id="feedback-form" method="POST" action="/send-feedback">
+    <form id="feedback-form" method="POST" action="/supporthub/send-feedback">
         <div class="mb-3">
             <label for="name" class="form-label">Your name:</label>
             <input type="text" id="name" name="name" class="form-control" required>
@@ -283,19 +283,23 @@
     updatePagination();
 
 
-    document.getElementById('openTicketButton').addEventListener('click', () => {
+document.getElementById('openTicketButton').addEventListener('click', () => {
     const selectedFoundry = document.getElementById('foundryFilter').value;
-    const username = "{{ current_user.username }}";  // Assuming you are using Jinja to pass the username
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentUsername = urlParams.get('user');
+
+    if (!currentUsername) {
+        alert('Please login to create a ticket.');
+        return;
+    }
 
     if (selectedFoundry) {
-        // Only pass username if a user is selected, otherwise, skip it
-        const url = `/new_ticket?foundry=${encodeURIComponent(selectedFoundry)}${username ? '&username=' + encodeURIComponent(username) : ''}`;
+        const url = `/supporthub/new_ticket?foundry=${encodeURIComponent(selectedFoundry)}&user=${encodeURIComponent(currentUsername)}`;
         window.location.href = url;
     } else {
         alert('Please select a foundry to create a ticket.');
     }
 });
-
 
     function toggleComments(ticketId) {
         const ticketRow = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
@@ -318,7 +322,7 @@
             ticketRow.after(newRow);
 
             // Fetch and display comments
-            fetch(`/comments/${ticketId}`)
+            fetch(`/supporthub/comments/${ticketId}`)
                 .then(response => response.json())
                 .then(data => {
                     const commentBox = newRow.querySelector('div');
@@ -376,7 +380,7 @@
         const formData = new FormData(e.target); // Use FormData directly
 
         try {
-            const response = await fetch('/send-feedback', {
+            const response = await fetch('/supporthub/send-feedback', {
                 method: 'POST',
                 body: formData, // Send as FormData
             });

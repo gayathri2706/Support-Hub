@@ -66,7 +66,7 @@ Dashboard
                 <td>{{ ticket.resolved_time or 'N/A' }}</td>
                 <td>
                     {% if ticket.attachment_file %}
-                        <a href="/uploads/user_files/{{ ticket.attachment_file }}" target="_blank" class="btn btn-sm btn-info">View File</a>
+                        <a href="/supporthub/uploads/user_files/{{ ticket.attachment_file }}" target="_blank" class="btn btn-sm btn-info">View File</a>
                     {% else %}
                         <span>No File</span>
                     {% endif %}
@@ -177,7 +177,7 @@ Dashboard
         document.getElementById('assignModalLabel').textContent = assignedName ? 'Edit Assigned Ticket' : 'Assign Ticket';
 
         // Fetch assignable users
-        fetch('/api/assignable-users')
+        fetch('/supporthub/api/assignable-users')
             .then(response => response.json())
             .then(data => {
                 const assignSelect = document.getElementById('assign-name');
@@ -217,7 +217,7 @@ Dashboard
         }
 
         // Send assignment request
-        fetch(`/api/tickets/${currentAssignTicketId}/assign`, {
+        fetch(`/supporthub/api/tickets/${currentAssignTicketId}/assign`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ assignee_id: assignId, comment: assignComment }),
@@ -239,7 +239,7 @@ Dashboard
 
     // Function to populate the dropdown with names and emails
     function populateAssignDropdown() {
-        fetch('/api/assignable-users') // Use the predefined endpoint
+        fetch('/supporthub/api/assignable-users') // Use the predefined endpoint
             .then(response => response.json())
             .then(data => {
                 const assignDropdown = document.getElementById('assign-name');
@@ -412,7 +412,7 @@ Dashboard
             formData.append('file', file);
         }
 
-        fetch(`/api/tickets/${ticketId}/close`, {
+        fetch(`/supporthub/api/tickets/${ticketId}/close`, {
             method: 'POST',
             body: formData,
         })
@@ -458,7 +458,7 @@ Dashboard
     }
 
     function updateTicketStatus(ticketId, status) {
-        fetch(`/api/tickets/${ticketId}`, {
+        fetch(`/supporthub/api/tickets/${ticketId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status }),
@@ -476,7 +476,7 @@ async function fetchChartData() {
     try {
         const rawFoundry = "{{ foundry }}";
         const foundryName = rawFoundry.toLowerCase() === "admin" ? "all" : rawFoundry;
-        const response = await fetch(`/api/chart-data?foundry_name=${encodeURIComponent(foundryName)}`);
+        const response = await fetch(`/supporthub/api/chart-data?foundry_name=${encodeURIComponent(foundryName)}`);
         const data = await response.json();
 
         console.log("Case Types data:", data.case_types);
@@ -588,11 +588,11 @@ async function fetchChartData() {
         if (foundry === "All") {
             // For super admin - redirect to new ticket page with just the username
             // This will show the foundry dropdown for them to choose
-            window.location.href = `/new_ticket?username=${encodeURIComponent(username)}`;
+            window.location.href = `/supporthub/new_ticket?username=${encodeURIComponent(username)}`;
         } else {
             // For foundry admin - redirect with both foundry and username
             // This will pre-select the foundry but allow choosing a person
-            window.location.href = `/new_ticket?foundry=${encodeURIComponent(foundry)}&username=${encodeURIComponent(username)}`;
+            window.location.href = `/supporthub/new_ticket?foundry=${encodeURIComponent(foundry)}&username=${encodeURIComponent(username)}`;
         }
     });
 

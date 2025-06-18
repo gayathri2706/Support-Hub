@@ -143,6 +143,12 @@ html, body {
     width: auto; /* Adjusts based on content */
 }
 
+#foundryDetails {
+        margin-top: 20px;
+        width: 100%;
+        overflow-x: auto;
+    }
+
 /* Table Styles */
 .table-container {
     min-height: 230px; /* Adjust the height based on row size */
