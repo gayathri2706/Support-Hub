@@ -8,18 +8,16 @@ Dashboard
 <div class="header-container justify-content-between align-items-center">
     <h3>Dashboard</h3>
     <div class="d-flex align-items-center">
-
-        <!-- Filter by Status Dropdown -->
         <div class="me-3">
             <select id="statusFilter" class="form-select" style="width: 150px;">
-                <option value="" selected>All</option>  <!-- Set All as the default -->
+                <option value="" selected>All</option>
                 <option value="Open">Open</option>
                 <option value="Closed">Closed</option>
             </select>
         </div>
-
         <a href="#" id="openTicketButton" class="btn btn-danger me-2">Open Ticket</a>
-        <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+        <a href="/supporthub/?user={{ username }}" class="btn btn-secondary">Back</a>
+
     </div>
 </div>
 
@@ -62,15 +60,15 @@ Dashboard
                             <option value="Closed" {% if ticket.status == 'Closed' %}selected{% endif %}>Closed</option>
                         </select>
                     </div>
-                </td>                                                  
+                </td>
                 <td>{{ ticket.resolved_time or 'N/A' }}</td>
                 <td>
                     {% if ticket.attachment_file %}
-                        <a href="/supporthub/uploads/user_files/{{ ticket.attachment_file }}" target="_blank" class="btn btn-sm btn-info">View File</a>
+                        <a href="/uploads/user_files/{{ ticket.attachment_file }}" target="_blank" class="btn btn-sm btn-info">View File</a>
                     {% else %}
                         <span>No File</span>
                     {% endif %}
-                </td>   
+                </td>
                 <td>
                     <button id="assign-button-{{ ticket.ticket_id }}" class="btn btn-sm btn-outline-primary"
                         {% if ticket.status == 'Closed' %}disabled{% endif %}
@@ -83,7 +81,7 @@ Dashboard
         </tbody>
     </table>
 </div>
-<!-- Move Pagination Controls BELOW the Table, BEFORE Charts -->
+
 <div class="pagination-container d-flex justify-content-center align-items-center mt-2 mb-0">
     <button id="firstPage" class="btn btn-sm btn-dark me-2">⏮</button>
     <button id="prevPage" class="btn btn-sm btn-dark me-2">◀</button>
@@ -102,18 +100,13 @@ Dashboard
             </div>
             <div class="modal-body">
                 <form id="assignForm">
-                    <!-- Select Name -->
                     <div class="mb-3">
                         <label for="assign-name" class="form-label">Assign To:</label>
-                        <select id="assign-name" name="assign_name" class="form-select" required>
-                            <!-- Options will be dynamically populated -->
-                        </select>
+                        <select id="assign-name" name="assign_name" class="form-select" required></select>
                     </div>
-                    <!-- Display Email -->
                     <div id="email-display" class="mt-2 text-muted" style="display: none;">
-                        <strong>Email:</strong> <span id="assigne-email"></span>
+                        <strong>Email:</strong> <span id="assigned-email"></span>
                     </div>
-                    <!-- Comment -->
                     <div class="mb-3">
                         <label for="assign-comment" class="form-label">Comment:</label>
                         <textarea id="assign-comment" name="assign_comment" class="form-control" rows="3" required></textarea>
@@ -128,6 +121,7 @@ Dashboard
     </div>
 </div>
 
+<!-- Close Modal -->
 <div class="modal fade" id="closeTicketModal" tabindex="-1" aria-labelledby="closeTicketModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -136,10 +130,8 @@ Dashboard
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="revertStatusToOpen()"></button>
             </div>
             <div class="modal-body">
-                <!-- File Upload -->
-                <input type="file" id="attach-file-modal" class="form-control" style="display: block; margin-top: 10px;">
-                <!-- Comment Section -->
-                <div id="comment-section" class="mt-3">
+                <input type="file" id="attach-file-modal" class="form-control">
+                <div class="mt-3">
                     <label for="close-comment" class="form-label">Add Comment:</label>
                     <textarea class="form-control" id="close-comment" rows="3"></textarea>
                 </div>
@@ -156,8 +148,6 @@ Dashboard
     <div class="col-md-6">
         <div id="caseTypeChart" style="height: 320px;"></div>
     </div>
-
-    <!-- Priority Chart -->
     <div class="col-md-6">
         <div id="priorityChart" style="height: 265px;"></div>
     </div>
@@ -167,320 +157,147 @@ Dashboard
 <script src="https://code.highcharts.com/modules/accessibility.js"></script>
 
 <script>
-    let currentAssignTicketId = null; 
-    
-    // Open Assign Modal
-    function openAssignModal(ticketId, assignedName, assignedEmail) {
-        currentAssignTicketId = ticketId;
+let currentAssignTicketId = null;
+let previousStatus = null;
 
-        // Set modal title
-        document.getElementById('assignModalLabel').textContent = assignedName ? 'Edit Assigned Ticket' : 'Assign Ticket';
+function openAssignModal(ticketId, assignedName, assignedEmail) {
+    currentAssignTicketId = ticketId;
+    document.getElementById('assignModalLabel').textContent = assignedName ? 'Edit Assigned Ticket' : 'Assign Ticket';
 
-        // Fetch assignable users
-        fetch('/supporthub/api/assignable-users')
-            .then(response => response.json())
-            .then(data => {
-                const assignSelect = document.getElementById('assign-name');
-                assignSelect.innerHTML = ''; // Clear previous options
-
-                data.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = `${user.name} (${user.email})`;
-                    assignSelect.appendChild(option);
-
-                    // Preselect the currently assigned user
-                    if (user.name === assignedName) {
-                        option.selected = true;
-                    }
-                });
-
-                // Show modal
-                const modalElement = document.getElementById('assignModal');
-                if (modalElement) {
-                    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-                    modal.show();
-                } else {
-                    console.error("❌ Assign Modal NOT FOUND!");
-                }
-            })
-            .catch(error => console.error('Error fetching assignable users:', error));
-    }
-
-    function assignTicket() {
-        const assignId = document.getElementById('assign-name').value;
-        const assignComment = document.getElementById('assign-comment').value;
-
-        if (!assignId || !assignComment) {
-            alert('Please fill in all fields.');
-            return;
-        }
-
-        // Send assignment request
-        fetch(`/supporthub/api/tickets/${currentAssignTicketId}/assign`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ assignee_id: assignId, comment: assignComment }),
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Ticket assigned successfully!');
-                    location.reload(); // Refresh page to update table
-                } else {
-                    alert('Failed to assign ticket: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error assigning ticket:', error);
-                alert('An error occurred. Please try again.');
-            });
-    }
-
-    // Function to populate the dropdown with names and emails
-    function populateAssignDropdown() {
-        fetch('/supporthub/api/assignable-users') // Use the predefined endpoint
-            .then(response => response.json())
-            .then(data => {
-                const assignDropdown = document.getElementById('assign-name');
-                assignDropdown.innerHTML = ''; // Clear existing options
-
-                // Populate dropdown options
-                data.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.name; // Assign the name as the value
-                    option.textContent = `${user.name} (${user.email})`; // Display name and email
-                    option.setAttribute('data-email', user.email); // Store email as a data attribute
-                    assignDropdown.appendChild(option);
-                });
-
-                // Add event listener to update email display
-                assignDropdown.addEventListener('change', () => {
-                    const selectedOption = assignDropdown.options[assignDropdown.selectedIndex];
-                    const emailDisplay = document.getElementById('assigned-email');
-                    const emailContainer = document.getElementById('email-display');
-                    if (selectedOption.value) {
-                        emailDisplay.textContent = selectedOption.getAttribute('data-email');
-                        emailContainer.style.display = 'block';
-                    } else {
-                        emailDisplay.textContent = '';
-                        emailContainer.style.display = 'none';
-                    }
-                });
-
-                // Trigger the event listener to show the email of the first user
-                assignDropdown.dispatchEvent(new Event('change'));
-            })
-            .catch(error => console.error('Error fetching users:', error));
-    }
-
-    let previousStatus = null;
-
-    function handleStatusChange(ticketId) {
-        const dropdown = document.getElementById(`status-${ticketId}`);
-        const newStatus = dropdown.value;
-
-        if (newStatus === 'Closed') {
-            previousStatus = 'Open'; // Store the previous status
-            window.currentTicketId = ticketId; // Store the ticket ID for later
-            
-            // Debugging: Check if the correct ticket ID is stored
-            console.log("Closing Ticket:", ticketId);
-
-            // Check if modal exists and show it
-            const modalElement = document.getElementById('closeTicketModal');
-            if (modalElement) {
-                const modal = new bootstrap.Modal(modalElement);
-                modal.show();
-            } else {
-                console.error("Close Ticket Modal not found.");
-            }
-        } else {
-            updateTicketStatus(ticketId, newStatus);
-        }
-    }
-    
-    function revertStatusToOpen() {
-        if (previousStatus === 'Open') {
-            const ticketId = window.currentTicketId;
-            const dropdown = document.getElementById(`status-${ticketId}`);
-            dropdown.value = 'Open'; // Reset the dropdown to Open
-        }
-    }
-    document.addEventListener('DOMContentLoaded', applyFilters);
-
-    const rowsPerPage = 4; // Number of tickets per page
-    let currentPage = 1;
-    let totalRows = 0;
-
-    function applyFilters() {
-        const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
-        const rows = document.querySelectorAll('#ticketsTable tr');
-        totalRows = 0;
-
-        rows.forEach(row => {
-            const status = row.getAttribute("data-status").toLowerCase();
-
-            if (statusFilter === "" || status === statusFilter) {
-                row.setAttribute("data-visible", "true"); // Mark as visible
-                totalRows++;
-            } else {
-                row.setAttribute("data-visible", "false"); // Hide row
-            }
-        });
-
-        currentPage = 1; // Reset to first page when filtering
-        updatePagination();
-    }
-
-    function updatePagination() {
-        const rows = document.querySelectorAll('#ticketsTable tr');
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
-
-        if (currentPage > totalPages) {
-            currentPage = totalPages || 1;
-        }
-
-        let visibleIndex = 0;
-
-        rows.forEach(row => {
-            if (row.getAttribute("data-visible") === "true") {
-                if (visibleIndex >= (currentPage - 1) * rowsPerPage && visibleIndex < currentPage * rowsPerPage) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
-                visibleIndex++;
-            } else {
-                row.style.display = "none";
-            }
-        });
-
-        document.getElementById('paginationInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
-    }
-
-    document.getElementById('firstPage').addEventListener('click', () => {
-        currentPage = 1;
-        updatePagination();
-    });
-
-    document.getElementById('prevPage').addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            updatePagination();
-        }
-    });
-
-    document.getElementById('nextPage').addEventListener('click', () => {
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            updatePagination();
-        }
-    });
-
-    document.getElementById('lastPage').addEventListener('click', () => {
-        currentPage = Math.ceil(totalRows / rowsPerPage);
-        updatePagination();
-    });
-
-    // Ensure Filters & Pagination Work Together
-    // Call this function when the modal opens
-    document.addEventListener("DOMContentLoaded", function () {
-        console.log("JS Loaded, attaching event listeners...");
-        
-        document.getElementById("statusFilter").addEventListener("change", applyFilters);
-        document.querySelectorAll("button").forEach(btn => {
-            btn.addEventListener("click", () => console.log(`Clicked: ${btn.textContent}`));
-        });
-    });
-    
-    function closeTicketWithFile() {
-        const ticketId = window.currentTicketId;
-        const comment = document.getElementById('close-comment').value.trim();
-        const fileInput = document.getElementById('attach-file-modal');
-        const file = fileInput.files[0];
-
-        if (!comment) {
-            alert("Please add a comment before closing the ticket.");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('comment', comment);
-        if (file) {
-            formData.append('file', file);
-        }
-
-        fetch(`/supporthub/api/tickets/${ticketId}/close`, {
-            method: 'POST',
-            body: formData,
-        })
+    fetch('/api/assignable-users')
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                alert("Ticket closed successfully!");
+            const assignSelect = document.getElementById('assign-name');
+            assignSelect.innerHTML = '';
+            data.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.name} (${user.email})`;
+                if (user.name === assignedName) option.selected = true;
+                assignSelect.appendChild(option);
+            });
 
-                // Update Status Dropdown UI dynamically
-                const statusDropdown = document.getElementById(`status-${ticketId}`);
-                if (statusDropdown) {
-                    statusDropdown.value = "Closed";  // Set status to "Closed"
-                    statusDropdown.setAttribute("data-status", "Closed"); // Ensure the CSS updates
-                    statusDropdown.disabled = true;   // Disable dropdown
-                    
-                    // Apply the closed status styling dynamically
-                    statusDropdown.style.color = "#cc0000"; // Dark Red
-                    statusDropdown.style.backgroundColor = "rgba(255, 0, 0, 0.2)"; // Light Red
-                }
-
-                // Disable the "Assigned To" button dynamically
-                const assignButton = document.getElementById(`assign-button-${ticketId}`);
-                if (assignButton) {
-                    assignButton.disabled = true;
-                    assignButton.classList.add("btn-secondary"); // Change appearance
-                    assignButton.classList.remove("btn-outline-primary");
-                }
-
-                // Hide modal after successful update
-                const modal = bootstrap.Modal.getInstance(document.getElementById('closeTicketModal'));
-                modal.hide();
-
-                // Clear file input after closing
-                fileInput.value = '';
-            } else {
-                alert("Error closing ticket: " + data.message);
-            }
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('assignModal'));
+            modal.show();
         })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("An unexpected error occurred while closing the ticket.");
-        });
+        .catch(error => console.error('Error fetching assignable users:', error));
+}
+
+function assignTicket() {
+    const assignId = document.getElementById('assign-name').value;
+    const assignComment = document.getElementById('assign-comment').value;
+    if (!assignId || !assignComment) {
+        alert('Please fill in all fields.');
+        return;
     }
 
-    function updateTicketStatus(ticketId, status) {
-        fetch(`/supporthub/api/tickets/${ticketId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status }),
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error('Error updating status:', error));
+    fetch(`/api/tickets/${currentAssignTicketId}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignee_id: assignId, comment: assignComment }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Ticket assigned successfully!');
+            location.reload();
+        } else {
+            alert('Failed to assign ticket: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error assigning ticket:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+function handleStatusChange(ticketId) {
+    const dropdown = document.getElementById(`status-${ticketId}`);
+    const newStatus = dropdown.value;
+    if (newStatus === 'Closed') {
+        previousStatus = 'Open';
+        window.currentTicketId = ticketId;
+        const modal = new bootstrap.Modal(document.getElementById('closeTicketModal'));
+        modal.show();
+    } else {
+        updateTicketStatus(ticketId, newStatus);
     }
+}
+
+function revertStatusToOpen() {
+    if (previousStatus === 'Open') {
+        const ticketId = window.currentTicketId;
+        const dropdown = document.getElementById(`status-${ticketId}`);
+        dropdown.value = 'Open';
+    }
+}
+
+function closeTicketWithFile() {
+    const ticketId = window.currentTicketId;
+    const comment = document.getElementById('close-comment').value.trim();
+    const fileInput = document.getElementById('attach-file-modal');
+    const file = fileInput.files[0];
+
+    if (!comment) {
+        alert("Please add a comment before closing the ticket.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('comment', comment);
+    if (file) formData.append('file', file);
+
+    fetch(`/api/tickets/${ticketId}/close`, {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Ticket closed successfully!");
+            document.getElementById(`status-${ticketId}`).value = "Closed";
+            document.getElementById(`status-${ticketId}`).disabled = true;
+            document.getElementById(`assign-button-${ticketId}`).disabled = true;
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('closeTicketModal'));
+            modal.hide();
+        } else {
+            alert("Error closing ticket: " + data.message);
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("An unexpected error occurred while closing the ticket.");
+    });
+}
+
+function updateTicketStatus(ticketId, status) {
+    fetch(`/api/tickets/${ticketId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Ticket status updated successfully!');
+            location.reload();
+        } else {
+            alert('Failed to update status: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating ticket status:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
 
 async function fetchChartData() {
     try {
         const rawFoundry = "{{ foundry }}";
         const foundryName = rawFoundry.toLowerCase() === "admin" ? "all" : rawFoundry;
-        const response = await fetch(`/supporthub/api/chart-data?foundry_name=${encodeURIComponent(foundryName)}`);
+        const response = await fetch(`/api/chart-data?foundry_name=${encodeURIComponent(foundryName)}`);
         const data = await response.json();
-
-        console.log("Case Types data:", data.case_types);
-        console.log("Priority data:", data.priority);
 
         renderCaseTypeChart(data.case_types);
         renderPriorityChart(data.priority);
@@ -489,113 +306,87 @@ async function fetchChartData() {
     }
 }
 
-    function renderCaseTypeChart(caseTypeData) {
-        Highcharts.chart('caseTypeChart', {
-            chart: { type: 'pie' },
-            title: { text: 'Case Type Distribution' },
-            credits: { enabled: false },
-            accessibility: { enabled: false },
-            plotOptions: {
-                pie: {
-                    innerSize: '60%', // Makes it a donut chart
-                    dataLabels: {
-                        enabled: true,
-                        format: '{point.name}: {point.y}', // Show name with count
-                        style: { fontSize: '12px', fontWeight: 'bold' }
-                    }   
-                }
-            },
-            series: [{
-                name: 'Cases',
-                data: caseTypeData
-            }]
-        });
-    }
+function renderCaseTypeChart(data) {
+    Highcharts.chart('caseTypeChart', {
+        chart: { type: 'pie' },
+        title: { text: 'Case Type Distribution' },
+        credits: { enabled: false },
+        series: [{ name: 'Cases', data }]
+    });
+}
 
-    function renderPriorityChart(priorityData) {
-        Highcharts.chart('priorityChart', {
-            chart: { type: 'pie' },
-            title: { text: 'Priority Distribution' },
-            credits: { enabled: false },
-            
-            accessibility: { enabled: false },
-            plotOptions: {
-                pie: {
-                    innerSize: '60%', // Makes it a donut chart
-                    dataLabels: { 
-                        enabled: true,
-                        format: '{point.name}: {point.y}', // Show name with count
-                        style: { fontSize: '12px', fontWeight: 'bold' }
-                    }
-                }
-            },
-            series: [{
-                name: 'Tickets',
-                data: priorityData,
-                enableMouseTracking: false,
-                animation: {
-                    duration: 2000
-                },
-                colorByPoint: true,
-            }]
-        });
-    }
+function renderPriorityChart(data) {
+    Highcharts.chart('priorityChart', {
+        chart: { type: 'pie' },
+        title: { text: 'Priority Distribution' },
+        credits: { enabled: false },
+        series: [{ name: 'Tickets', data }]
+    });
+}
 
-    document.addEventListener('DOMContentLoaded', fetchChartData);
+document.addEventListener('DOMContentLoaded', function () {
+    fetchChartData();
+    applyFilters();
+    document.getElementById("statusFilter").addEventListener("change", applyFilters);
+});
 
-    document.addEventListener("DOMContentLoaded", function () {
-        const closeTicketModalElement = document.getElementById("closeTicketModal");
-        const assignModalElement = document.getElementById("assignModal");
+const rowsPerPage = 4;
+let currentPage = 1;
+let totalRows = 0;
 
-        if (closeTicketModalElement) {
-            const closeTicketModal = new bootstrap.Modal(closeTicketModalElement);
-            window.showCloseTicketModal = function() {
-                closeTicketModal.show();
-            };
-        }
+function applyFilters() {
+    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+    const rows = document.querySelectorAll('#ticketsTable tr');
+    totalRows = 0;
 
-        if (assignModalElement) {
-            const assignModal = new bootstrap.Modal(assignModalElement);
-            window.showAssignModal = function() {
-                assignModal.show();
-            };
-        }
+    rows.forEach(row => {
+        const status = row.getAttribute("data-status").toLowerCase();
+        const visible = !statusFilter || status === statusFilter;
+        row.setAttribute("data-visible", visible);
+        if (visible) totalRows++;
     });
 
-    document.addEventListener("DOMContentLoaded", function() {
-        const priorityElements = document.querySelectorAll(".priority-badge");
+    currentPage = 1;
+    updatePagination();
+}
 
-        priorityElements.forEach(element => {
-            const priority = element.getAttribute("data-priority");
+function updatePagination() {
+    const rows = document.querySelectorAll('#ticketsTable tr');
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+    let visibleIndex = 0;
 
-            if (priority === "High") {
-                element.style.color = "#cc0000"; // Dark Red
-                element.style.backgroundColor = "rgba(255, 0, 0, 0.2)"; // Light Red
-            } else if (priority === "Medium") {
-                element.style.color = "#0044cc"; // Dark Blue
-                element.style.backgroundColor = "rgba(0, 0, 255, 0.2)"; // Light Blue
-            } else if (priority === "Low") {
-                element.style.color = "#008000"; // Dark Green
-                element.style.backgroundColor = "rgba(0, 255, 0, 0.2)"; // Light Green
-            }
-        });
-    });
-
-    document.getElementById('openTicketButton').addEventListener('click', () => {
-        const foundry = "{{ foundry }}";
-        const username = "{{ current_user.username }}";
-        
-        if (foundry === "All") {
-            // For super admin - redirect to new ticket page with just the username
-            // This will show the foundry dropdown for them to choose
-            window.location.href = `/supporthub/new_ticket?username=${encodeURIComponent(username)}`;
+    rows.forEach(row => {
+        if (row.getAttribute("data-visible") === "true") {
+            row.style.display = visibleIndex >= (currentPage - 1) * rowsPerPage && visibleIndex < currentPage * rowsPerPage ? "" : "none";
+            visibleIndex++;
         } else {
-            // For foundry admin - redirect with both foundry and username
-            // This will pre-select the foundry but allow choosing a person
-            window.location.href = `/supporthub/new_ticket?foundry=${encodeURIComponent(foundry)}&username=${encodeURIComponent(username)}`;
+            row.style.display = "none";
         }
     });
+
+    document.getElementById('paginationInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+}
+
+document.getElementById('firstPage').addEventListener('click', () => { currentPage = 1; updatePagination(); });
+document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) currentPage--; updatePagination(); });
+document.getElementById('nextPage').addEventListener('click', () => {
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+    if (currentPage < totalPages) currentPage++;
+    updatePagination();
+});
+document.getElementById('lastPage').addEventListener('click', () => {
+    currentPage = Math.ceil(totalRows / rowsPerPage);
+    updatePagination();
+});
+
+document.getElementById('openTicketButton').addEventListener('click', () => {
+    const foundry = "{{ foundry }}";
+    const username = "{{ username }}";
+    const url = foundry === "All"
+        ? `/new_ticket?username=${encodeURIComponent(username)}`
+        : `/new_ticket?foundry=${encodeURIComponent(foundry)}&username=${encodeURIComponent(username)}`;
+    window.location.href = url;
+});
 
 </script>
-
 {% endblock %}

@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <base href="/supporthub/">
     <title>{% block title %}Support Hub{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -25,45 +24,38 @@
     <!-- Add this script for handling user sessions -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-    // Clean up URL hash and handle user parameter
-    const currentPath = window.location.pathname;
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentUser = urlParams.get('user');
-    
-    // If URL has a hash or no user parameter, redirect properly
-    if (window.location.hash || !currentUser) {
-        let newUrl = currentPath;
-        if (currentUser) {
-            newUrl += `?user=${currentUser}`;
-        } else if ('{{ current_user.username }}') {
-            // Use Jinja template variable if available
-            newUrl += `?user={{ current_user.username }}`;
-        } else {
-            // Show access denied message
-            document.body.innerHTML = `
-                <div class="container mt-5">
-                    <div class="alert alert-danger">
-                        <h4 class="alert-heading">Access Denied</h4>
-                        <p>No username provided. Please login to access the Support Hub.</p>
-                    </div>
-                </div>`;
+        const currentPath = window.location.pathname;
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentUser = urlParams.get('user');
+
+        if (window.location.hash || !currentUser) {
+            let newUrl = currentPath;
+            if (currentUser) {
+                newUrl += `?user=${currentUser}`;
+            } else if ('{{ username }}') {
+                newUrl += `?user={{ username }}`;
+            } else {
+                document.body.innerHTML = `
+                    <div class="container mt-5">
+                        <div class="alert alert-danger">
+                            <h4 class="alert-heading">Access Denied</h4>
+                            <p>No username provided. Please login to access the Support Hub.</p>
+                        </div>
+                    </div>`;
+                return;
+            }
+            window.location.href = newUrl;
             return;
         }
-        window.location.href = newUrl;
-        return;
-    }
 
-    // Update all internal links
-    document.querySelectorAll('a').forEach(link => {
-        if (link.href.includes('/supporthub')) {
+        document.querySelectorAll('a').forEach(link => {
             const url = new URL(link.href);
-            if (!url.searchParams.has('user') && currentUser) {
+            if (!url.searchParams.has('user') && currentUser && url.hostname === window.location.hostname) {
                 url.searchParams.set('user', currentUser);
                 link.href = url.toString();
             }
-        }
+        });
     });
-});
     </script>
 </body>
 </html>

@@ -4,12 +4,10 @@
 <div class="header-container justify-content-between align-items-center mb-4">
     <div class="d-flex align-items-center gap-1">
         <h3 class="mb-0"><strong>Manage Assign To</strong></h3>
-        
     </div>
-       <!-- Save Admin Status -->
-       <a href="http://127.0.0.1:5000/?user=admin#" class="btn btn-secondary">Back</a>
-
+    <a href="/supporthub" class="btn btn-secondary">Back</a>
 </div>
+
 <div class="container mt-4">
     <table class="table table-striped mt-3">
         <thead>
@@ -38,7 +36,7 @@
 
 <script>
     function fetchAssignees() {
-        fetch('/supporthub/api/assign-to')
+        fetch('/api/assign-to')
             .then(response => response.json())
             .then(assignees => {
                 const assignToList = document.getElementById("assignToList");
@@ -76,7 +74,7 @@
             return;
         }
 
-        fetch('/supporthub/api/assign-to/add', {
+        fetch('/api/assign-to/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: newName, email: newEmail })
@@ -98,7 +96,7 @@
         const newEmail = prompt("Edit email:", currentEmail);
         if (!newName || !newEmail) return;
 
-        fetch(`/supporthub/api/assign-to/${assigneeId}`, {
+        fetch(`/api/assign-to/${assigneeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: newName.trim(), email: newEmail.trim() })
@@ -118,7 +116,7 @@
     function deleteAssignee(assigneeId, name) {
         if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
 
-        fetch(`/supporthub/api/assign-to/${assigneeId}`, { method: 'DELETE' })
+        fetch(`/api/assign-to/${assigneeId}`, { method: 'DELETE' })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -131,7 +129,7 @@
     }
 
     function toggleAdmin(assigneeId, isChecked) {
-        fetch(`/supporthub/api/assign-to/admin/${assigneeId}`, {
+        fetch(`/api/assign-to/admin/${assigneeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ is_admin: isChecked })
@@ -156,7 +154,7 @@
             });
         });
 
-        fetch('/supporthub/api/assign-to/update-admin-status', {
+        fetch('/api/assign-to/update-admin-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ updates })
@@ -185,8 +183,6 @@
             }, 500);
         }, 2000);
     }
-
-
 
     fetchAssignees();
 </script>

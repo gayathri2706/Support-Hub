@@ -107,17 +107,6 @@
         return `${endpoint}${endpoint.includes('?') ? '&' : '?'}user=${user}`;
     }
 
-    // Update UTC time every second
-    function updateTime() {
-        const now = new Date();
-        const formatted = now.getUTCFullYear() + '-' + 
-                         String(now.getUTCMonth() + 1).padStart(2, '0') + '-' +
-                         String(now.getUTCDate()).padStart(2, '0') + ' ' +
-                         String(now.getUTCHours()).padStart(2, '0') + ':' +
-                         String(now.getUTCMinutes()).padStart(2, '0') + ':' +
-                         String(now.getUTCSeconds()).padStart(2, '0');
-        document.getElementById('currentUTC').textContent = formatted;
-    }
     document.addEventListener("DOMContentLoaded", () => {
         loadFoundryDropdown();
         
@@ -143,7 +132,7 @@
     });
         
     function loadFoundryDropdown() {
-        fetch(getAuthenticatedUrl("/supporthub/api/foundries"))
+        fetch(getAuthenticatedUrl("/api/foundries"))
             .then(response => response.json())
             .then(data => {
                 const dropdown = document.getElementById("foundryDropdown");
@@ -203,7 +192,7 @@
             }
 
             // Send data to server
-            fetch(getAuthenticatedUrl("/supporthub/api/foundry/add"), {
+            fetch(getAuthenticatedUrl("/api/foundry/add"), {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -284,7 +273,7 @@
             return;
         }
 
-        fetch(getAuthenticatedUrl("/supporthub/api/foundry/user/add"), {
+        fetch(getAuthenticatedUrl("/api/foundry/user/add"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData)
@@ -322,7 +311,7 @@
 
         console.log("Fetching details for foundry:", foundry);  // Debug log
 
-        fetch(getAuthenticatedUrl(`/supporthub/api/foundry/details/${foundry}`))
+        fetch(getAuthenticatedUrl(`/api/foundry/details/${foundry}`))
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -426,7 +415,7 @@
     function deleteEntry(id) {
         if (!confirm("Are you sure you want to delete this user?")) return;
 
-        fetch(getAuthenticatedUrl(`/supporthub/api/foundry/user/delete/${id}`), { 
+        fetch(getAuthenticatedUrl(`/api/foundry/user/delete/${id}`), { 
             method: "DELETE" 
         })
         .then(response => response.json())
@@ -524,7 +513,7 @@ function saveUserEdit(userId) {
     }
 
     // Send update request
-    fetch(getAuthenticatedUrl(`/supporthub/api/foundry/user/edit/${userId}`), {
+    fetch(getAuthenticatedUrl(`/api/foundry/user/edit/${userId}`), {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',

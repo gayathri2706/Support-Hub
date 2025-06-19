@@ -14,13 +14,11 @@
             <a href="/supporthub/user-management" class="btn" title="User Management">
                 <i class="bi bi-people-fill"></i>
             </a>
-            
         {% endif %}
     </div>
     {% if current_user and current_user.is_admin %}
         <a href="/supporthub/dashboard?user={{ current_user.username }}" class="btn btn-primary">Dashboard</a>
     {% endif %}
-
 
 </div>
 
@@ -119,6 +117,7 @@
                                     <i class="bi bi-download" title="Download Resolved File"></i>
                                 </a>
                             {% endif %}
+
                     
                             <!-- Feedback Button -->
                             <button class="btn btn-primary btn-sm"
@@ -157,7 +156,8 @@
 <div class="modal-overlay" onclick="closeFeedbackModal()"></div>
 <div class="feedback-modal rounded p-4 bg-light">
     <h2 class="text-primary">Customer Feedback</h2>
-    <form id="feedback-form" method="POST" action="/supporthub/send-feedback">
+    <form id="feedback-form" method="POST" action="/send-feedback">
+
         <div class="mb-3">
             <label for="name" class="form-label">Your name:</label>
             <input type="text" id="name" name="name" class="form-control" required>
@@ -294,7 +294,7 @@ document.getElementById('openTicketButton').addEventListener('click', () => {
     }
 
     if (selectedFoundry) {
-        const url = `/supporthub/new_ticket?foundry=${encodeURIComponent(selectedFoundry)}&user=${encodeURIComponent(currentUsername)}`;
+        const url = `/new_ticket?foundry=${encodeURIComponent(selectedFoundry)}&user=${encodeURIComponent(currentUsername)}`;
         window.location.href = url;
     } else {
         alert('Please select a foundry to create a ticket.');
@@ -322,7 +322,7 @@ document.getElementById('openTicketButton').addEventListener('click', () => {
             ticketRow.after(newRow);
 
             // Fetch and display comments
-            fetch(`/supporthub/comments/${ticketId}`)
+            fetch(`/comments/${ticketId}`)
                 .then(response => response.json())
                 .then(data => {
                     const commentBox = newRow.querySelector('div');
@@ -380,10 +380,10 @@ document.getElementById('openTicketButton').addEventListener('click', () => {
         const formData = new FormData(e.target); // Use FormData directly
 
         try {
-            const response = await fetch('/supporthub/send-feedback', {
-                method: 'POST',
-                body: formData, // Send as FormData
-            });
+    const response = await fetch('/send-feedback', {
+        method: 'POST',
+        body: formData, // Send as FormData
+    });
 
             if (response.ok) {
                 alert('Feedback sent successfully!');

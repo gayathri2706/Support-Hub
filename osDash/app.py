@@ -25,8 +25,6 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"{db_config['driver']}://{db_config['username']}:{db_config['password']}@{db_config['host']}/{db_config['database']}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app.config['STATIC_URL_PATH'] = '/supporthub/static'
-app.config['STATIC_FOLDER'] = 'static'
 
 # Print the final connection URI for verification
 print(app.config['SQLALCHEMY_DATABASE_URI'])
@@ -55,15 +53,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Max upload size = 16MB
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/', endpoint='root_redirect')
-def redirect_to_supporthub():
-    """Root route handler that redirects to supporthub with user parameter."""
-    username = request.args.get('user', '')
-    if username:
-        return redirect(f'/supporthub/?user={username}')
-    return redirect('/supporthub/')
-
-@app.route('/supporthub/api/upload', methods=['POST'])
+@app.route('/api/upload', methods=['POST'])
 def upload_file():
     """Handle file uploads."""
     if 'file' not in request.files:
@@ -77,7 +67,7 @@ def upload_file():
 
     return jsonify({'error': 'Invalid file type'}), 400
 
-@app.route('/supporthub/uploads/<filename>', methods=['GET'])
+@app.route('/uploads/<filename>', methods=['GET'])
 def serve_file(filename):
     """Serve uploaded files with download option."""
     try:
@@ -85,7 +75,7 @@ def serve_file(filename):
     except FileNotFoundError:
         return jsonify({'error': 'File not found'}), 404
 
-@app.route('/supporthub/uploads/user_files/<filename>', methods=['GET'])
+@app.route('/uploads/user_files/<filename>', methods=['GET'])
 def serve_user_file(filename):
     """Serve uploaded user files with download option."""
     try:
@@ -116,7 +106,7 @@ app.config.update(
 
 mail = Mail(app)
 
-@app.route('/supporthub/send-feedback', methods=['POST'])
+@app.route('/send-feedback', methods=['POST'])
 def send_feedback():
     """Send feedback via email to dynamically selected admins."""
     try:
@@ -156,134 +146,64 @@ def send_feedback():
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
 @app.route('/')
-def redirect_to_supporthub():
-    """Root route handler that redirects to supporthub with user parameter."""
-    username = request.args.get('user', '')
-    if username:
-        return redirect(f'/supporthub/?user={username}')
-    return redirect('/supporthub/')
-
-@app.route('/supporthub/', endpoint='support_hub_index')
 def index():
-    """Render the homepage with user authentication."""
-    username = request.args.get("user", "")
-    
-    if not username:  # Check for empty username first
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            </head>
-            <body>
-                <div class="container mt-5">
-                    <div class="alert alert-danger">
-                        <h4 class="alert-heading">Access Denied</h4>
-                        <p>No username provided. Please login to access the Support Hub.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        """, 400
-    
-    try:
-        # Check regular user in foundries table
-        user_query = text("""
-            SELECT foundry_name, user_name, email, phone, is_admin 
-            FROM foundries 
-            WHERE LOWER(user_name) = LOWER(:username)
-        """)
-        user_result = db.session.execute(user_query, {"username": username}).fetchone()
+    """Render the homepage with user authentication from Sandman using user_name."""
+    username = request.args.get("user", "").replace(" ", "").lower()  # Get and normalize the username
+    print(f"Received normalized username: {username}")  # Debug line
 
-        # Handle admin user
-        if "admin" in username.lower():
-            foundries = [row[0] for row in db.session.execute(text("""
-                SELECT DISTINCT foundry_name FROM foundries ORDER BY foundry_name
-            """)).fetchall()]
-            
-            tickets = db.session.execute(text("""
-                SELECT ticket_id, DATE(date_created) AS date_created, 
-                       DATE(resolved_time) AS resolved_time,
-                       foundry_name, name, email, priority, issue, 
-                       issue_description, status, comments, resolved_file
-                FROM tickets
-                ORDER BY COALESCE(resolved_time, date_created) DESC
-            """)).fetchall()
+    if not username:
+        return "Error: No username provided", 400
 
-            return render_template('index.html',
+    # Handle super admin (admin keyword)
+    if "admin" in username:
+        foundries = [row[0] for row in db.session.execute(text("SELECT DISTINCT foundry_name FROM foundries")).fetchall()]
+        tickets = db.session.execute(text("""
+            SELECT ticket_id, DATE(date_created) AS date_created, DATE(resolved_time) AS resolved_time,
+                   foundry_name, name, email, priority, issue, issue_description, status, comments, resolved_file
+            FROM tickets
+            ORDER BY COALESCE(resolved_time, date_created) DESC
+        """)).fetchall()
+
+        return render_template('index.html',
                                tickets=tickets,
                                foundries=foundries,
                                user_info=None,
                                current_user={"username": username, "is_admin": True},
                                dashboard_tickets=tickets)
 
-        # Handle non-admin user
-        if not user_result:
-            return """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                </head>
-                <body>
-                    <div class="container mt-5">
-                        <div class="alert alert-danger">
-                            <h4 class="alert-heading">Access Denied</h4>
-                            <p>Invalid username. Please login with valid credentials.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            """, 401
+    # Normalize and check user_name match
+    persons_raw = db.session.execute(text("SELECT foundry_name, user_name, email, phone, is_admin FROM foundries")).fetchall()
+    for foundry_name, user_name_db, email, phone, is_admin in persons_raw:
+        normalized_user_name = str(user_name_db).replace(" ", "").lower() if user_name_db else ""
+        
+        if normalized_user_name == username:
+            tickets = db.session.execute(text("""
+                SELECT * FROM tickets WHERE foundry_name = :foundry_name
+                ORDER BY COALESCE(resolved_time, date_created) DESC
+            """), {'foundry_name': foundry_name}).fetchall()
 
-        # Process user data
-        foundry_name, user_name_db, email, phone, is_admin = user_result
+            dashboard_tickets = []
+            if is_admin:
+                dashboard_tickets = db.session.execute(text("""
+                    SELECT t.ticket_id, t.date_created, t.foundry_name, t.issue, t.issue_description, 
+                           t.priority, t.status, t.resolved_time, t.attachment_file,
+                           a.name AS assigned_to, a.email AS assigned_email
+                    FROM tickets t
+                    LEFT JOIN assign_to a ON t.assign_to = a.name
+                    ORDER BY COALESCE(t.resolved_time, t.date_created) DESC
+                """)).fetchall()
 
-        # Get tickets for the user's foundry
-        tickets = db.session.execute(text("""
-            SELECT * FROM tickets 
-            WHERE foundry_name = :foundry_name
-            ORDER BY COALESCE(resolved_time, date_created) DESC
-        """), {'foundry_name': foundry_name}).fetchall()
+            return render_template('index.html',
+                                   tickets=tickets,
+                                   foundries=[foundry_name],
+                                   user_info={"name": user_name_db, "email": email, "phone": phone},
+                                   current_user={"username": user_name_db, "is_admin": bool(is_admin)},
+                                   dashboard_tickets=dashboard_tickets if is_admin else None)
+    
+    # If we reach here, we didn't find a matching user - this was the missing return statement
+    return "Error: Invalid user - could not find matching username", 401
 
-        dashboard_tickets = []
-        if is_admin:
-            dashboard_tickets = db.session.execute(text("""
-                SELECT t.ticket_id, t.date_created, t.foundry_name, t.issue, t.issue_description, 
-                       t.priority, t.status, t.resolved_time, t.attachment_file,
-                       a.name AS assigned_to, a.email AS assigned_email
-                FROM tickets t
-                LEFT JOIN assign_to a ON t.assign_to = a.name
-                ORDER BY COALESCE(t.resolved_time, t.date_created) DESC
-            """)).fetchall()
-
-        return render_template('index.html',
-                           tickets=tickets,
-                           foundries=[foundry_name],
-                           user_info={"name": user_name_db, "email": email, "phone": phone},
-                           current_user={"username": user_name_db, "is_admin": bool(is_admin)},
-                           dashboard_tickets=dashboard_tickets if is_admin else None)
-
-    except Exception as e:
-        print(f"Error in index route: {str(e)}")
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            </head>
-            <body>
-                <div class="container mt-5">
-                    <div class="alert alert-danger">
-                        <h4 class="alert-heading">Error</h4>
-                        <p>An error occurred while processing your request. Please try again.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        """, 500
-
-@app.route('/supporthub/dashboard', methods=['GET', 'POST'])
+@app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     """
     Render the dashboard for super admin or foundry-level admin.
@@ -347,7 +267,7 @@ def dashboard():
                            tickets=tickets,
                            foundry=foundry_name)
 
-@app.route('/supporthub/api/assign-to', methods=['GET'])
+@app.route('/api/assign-to', methods=['GET'])
 def get_assignees():
     """Fetch all assignees from the database including admin status."""
     try:
@@ -358,7 +278,7 @@ def get_assignees():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
   
-@app.route('/supporthub/api/assignable-users', methods=['GET'])
+@app.route('/api/assignable-users', methods=['GET'])
 def get_assignable_users():
     """Fetch assignable users from the database."""
     try:
@@ -371,7 +291,7 @@ def get_assignable_users():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/supporthub/api/tickets/<ticket_id>/assign', methods=['POST'])
+@app.route('/api/tickets/<ticket_id>/assign', methods=['POST'])
 def assign_ticket(ticket_id):
     data = request.json
     assignee_id = data.get('assignee_id')
@@ -414,7 +334,7 @@ def assign_ticket(ticket_id):
     return jsonify({'success': True, 'message': 'Ticket assigned and email sent successfully!'})
 
     
-@app.route('/supporthub/api/foundry/user/<foundry>/<username>', methods=['GET'])
+@app.route('/api/foundry/user/<foundry>/<username>', methods=['GET'])
 def get_user_details(foundry, username):
     # Debugging line to check if the route is hit
     print(f"Fetching user for foundry: {foundry}, username: {username}")
@@ -438,7 +358,7 @@ def get_user_details(foundry, username):
         return jsonify({"error": "User not found"}), 404
     
 # Modify the get_user_details route to properly fetch by username
-@app.route('/supporthub/api/foundry/user/<username>', methods=['GET'])
+@app.route('/api/foundry/user/<username>', methods=['GET'])
 def get_user_details_by_username(username):
     """Fetch user details by username from any foundry."""
     print(f"Fetching user details for username: {username}")
@@ -467,181 +387,68 @@ def get_user_details_by_username(username):
         return jsonify({"error": "User not found"}), 404
     
 # Assign To Management Page
-@app.route('/supporthub/assign-to')
+@app.route('/assign-to')
 def assign_to_page():
-    """Render the Assign To management page with user authentication."""
-    username = request.args.get("user", "")
-    
-    if not username:
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            </head>
-            <body>
-                <div class="container mt-5">
-                    <div class="alert alert-danger">
-                        <h4 class="alert-heading">Access Denied</h4>
-                        <p>No username provided. Please login to access the Support Hub.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        """, 400
+    return render_template('assign_to.html', current_user=current_user)
 
-    # Check if user is admin
-    if "admin" not in username.lower():
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            </head>
-            <body>
-                <div class="container mt-5">
-                    <div class="alert alert-danger">
-                        <h4 class="alert-heading">Access Denied</h4>
-                        <p>Only administrators can access this page.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        """, 403
-
-    return render_template('assign_to.html', 
-                         current_user={"username": username, "is_admin": True})
-
-def check_admin_auth():
-    """Helper function to check admin authentication."""
-    username = request.args.get("user", "")
-    if not username or "admin" not in username.lower():
-        return False
-    return True
-
-@app.route('/supporthub/api/assign-to/add', methods=['POST'])
+# Add New Assignee API
+@app.route('/api/assign-to/add', methods=['POST'])
 def add_assignee():
-    """Add a new assignee to the database with admin authentication."""
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized access'}), 401
-
+    """Add a new assignee to the database."""
     try:
         data = request.json
-        name = data.get('name', '').strip()
-        email = data.get('email', '').strip()
-        is_admin = data.get('is_admin', False)
+        name = data.get('name').strip()
+        email = data.get('email').strip()
 
         if not name or not email:
             return jsonify({'error': 'Name and email are required'}), 400
 
         # Check if user already exists
-        existing_user = db.session.execute(
-            text("SELECT id FROM assign_to WHERE LOWER(email) = LOWER(:email)"), 
-            {"email": email}
-        ).fetchone()
-
+        existing_user = db.session.execute(text("SELECT id FROM assign_to WHERE email = :email"), {"email": email}).fetchone()
         if existing_user:
             return jsonify({"error": "A user with this email already exists"}), 400
 
         # Insert new assignee
-        query = text("""
-            INSERT INTO assign_to (name, email, is_admin, created_at, updated_at) 
-            VALUES (:name, :email, :is_admin, :timestamp, :timestamp)
-        """)
-        
-        current_time = datetime.utcnow()
-        db.session.execute(query, {
-            'name': name,
-            'email': email,
-            'is_admin': is_admin,
-            'timestamp': current_time
-        })
+        query = text("INSERT INTO assign_to (name, email) VALUES (:name, :email)")
+        db.session.execute(query, {'name': name, 'email': email})
         db.session.commit()
 
         return jsonify({'success': 'Assignee added successfully'})
-    
     except Exception as e:
-        db.session.rollback()
         return jsonify({'error': f'Failed to add assignee: {str(e)}'}), 500
 
-@app.route('/supporthub/api/assign-to/<int:assignee_id>', methods=['PUT'])
+# Edit Assignee API
+@app.route('/api/assign-to/<int:assignee_id>', methods=['PUT'])
 def edit_assignee(assignee_id):
-    """Edit an existing assignee in the database with admin authentication."""
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized access'}), 401
-
+    """Edit an existing assignee in the database."""
     try:
         data = request.json
-        new_name = data.get('name', '').strip()
-        new_email = data.get('email', '').strip()
-        is_admin = data.get('is_admin', False)
+        new_name = data.get('name').strip()
+        new_email = data.get('email').strip()
 
         if not new_name or not new_email:
             return jsonify({'error': 'Name and email cannot be empty'}), 400
 
-        # Check if email exists for other users
-        existing_user = db.session.execute(
-            text("SELECT id FROM assign_to WHERE LOWER(email) = LOWER(:email) AND id != :id"),
-            {"email": new_email, "id": assignee_id}
-        ).fetchone()
-
-        if existing_user:
-            return jsonify({"error": "Email is already in use by another user"}), 400
-
-        query = text("""
-            UPDATE assign_to 
-            SET name = :name, 
-                email = :email,
-                is_admin = :is_admin,
-                updated_at = :timestamp
-            WHERE id = :id
-        """)
-        
-        db.session.execute(query, {
-            'name': new_name,
-            'email': new_email,
-            'is_admin': is_admin,
-            'timestamp': datetime.utcnow(),
-            'id': assignee_id
-        })
+        query = text("UPDATE assign_to SET name = :name, email = :email WHERE id = :id")
+        db.session.execute(query, {'name': new_name, 'email': new_email, 'id': assignee_id})
         db.session.commit()
 
         return jsonify({'success': 'Assignee updated successfully'})
-    
     except Exception as e:
-        db.session.rollback()
         return jsonify({'error': f'Failed to update assignee: {str(e)}'}), 500
 
-@app.route('/supporthub/api/assign-to/<int:assignee_id>', methods=['DELETE'])
+# Delete Assignee API
+@app.route('/api/assign-to/<int:assignee_id>', methods=['DELETE'])
 def delete_assignee(assignee_id):
-    """Delete an assignee from the database with admin authentication."""
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized access'}), 401
-
+    """Delete an assignee from the database."""
     try:
-        # Check if assignee is assigned to any tickets
-        assigned_tickets = db.session.execute(
-            text("SELECT COUNT(*) FROM tickets WHERE assign_to IN (SELECT name FROM assign_to WHERE id = :id)"),
-            {'id': assignee_id}
-        ).scalar()
-
-        if assigned_tickets > 0:
-            return jsonify({'error': 'Cannot delete assignee with assigned tickets'}), 400
-
-        # Delete the assignee
-        db.session.execute(
-            text("DELETE FROM assign_to WHERE id = :id"), 
-            {'id': assignee_id}
-        )
+        db.session.execute(text("DELETE FROM assign_to WHERE id = :id"), {'id': assignee_id})
         db.session.commit()
-        
         return jsonify({'success': 'Assignee deleted successfully'})
-    
     except Exception as e:
-        db.session.rollback()
         return jsonify({'error': f'Failed to delete assignee: {str(e)}'}), 500
 
-@app.route('/supporthub/api/assign-to/admin/<int:assignee_id>', methods=['PUT'])
+@app.route('/api/assign-to/admin/<int:assignee_id>', methods=['PUT'])
 def update_admin_status(assignee_id):
     """Update admin status dynamically and send notification if assigned as admin."""
     try:
@@ -676,147 +483,98 @@ def update_admin_status(assignee_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-@app.route('/supporthub/api/foundries', methods=['GET'])
+@app.route('/api/foundries')
 def get_foundries():
-    """Fetch all foundry names."""
-    query = text("SELECT DISTINCT foundry_name FROM foundries")
-    result = db.session.execute(query).fetchall()
+    result = db.session.execute(text("SELECT DISTINCT foundry_name FROM foundries"))
     foundries = [row[0] for row in result]
     return jsonify(foundries)
 
 
-@app.route('/supporthub/new_ticket')
+
+@app.route('/new_ticket')
 def new_ticket():
     """
     Render the Create Ticket form with appropriate options based on user role.
     """
     try:
         # Get URL parameters
-        foundry = request.args.get('foundry') or request.args.get('foundry_name')
+        foundry = request.args.get('foundry') or request.args.get('foundry_name')  # Accept both parameter names
         username = request.args.get('user') or request.args.get('username')
         
         if not username:
-            return """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                </head>
-                <body>
-                    <div class="container mt-5">
-                        <div class="alert alert-danger">
-                            <h4 class="alert-heading">Access Denied</h4>
-                            <p>No username provided. Please login to access the Support Hub.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            """, 400
+            return "Missing username parameter", 400
             
         if not foundry:
-            return """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                </head>
-                <body>
-                    <div class="container mt-5">
-                        <div class="alert alert-danger">
-                            <h4 class="alert-heading">Error</h4>
-                            <p>Foundry not specified. Please select a foundry.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            """, 400
+            return "Foundry not specified", 400
 
         # Query for available case types for the ticket
         case_types = db.session.execute(text("SELECT id, name FROM case_types ORDER BY id")).fetchall()
         
-        # Check if user exists in foundries table
-        user_query = text("""
-            SELECT foundry_name, user_name, email, phone, is_admin 
-            FROM foundries 
-            WHERE LOWER(user_name) = LOWER(:username)
-        """)
-        user_result = db.session.execute(user_query, {"username": username}).fetchone()
-        
-        if not user_result and "admin" not in username.lower():
-            return """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                </head>
-                <body>
-                    <div class="container mt-5">
-                        <div class="alert alert-danger">
-                            <h4 class="alert-heading">Access Denied</h4>
-                            <p>Invalid user credentials. Please login with valid credentials.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            """, 401
-
         # Initialize user_info to None
         user_info = None
         
         # Check if user is super admin
         is_super_admin = "admin" in username.lower()
         
-        # Get all foundries for super admin, or just the selected one for foundry admin
-        if is_super_admin:
+        # Get all foundries for dropdown (or just the selected one for foundry admin)
+        if is_super_admin and not foundry:
+            # Super admin without foundry selected - show all foundries
             foundries = [row[0] for row in db.session.execute(
                 text("SELECT DISTINCT foundry_name FROM foundries ORDER BY foundry_name")
             ).fetchall()]
+            
+            # Allow super admin to choose foundry (don't show specific user info yet)
+            return render_template('create_ticket.html',
+                                  foundries=foundries,
+                                  case_types=case_types,
+                                  user_info=None,
+                                  current_user={"username": username, "is_admin": True},
+                                  show_foundry_dropdown=True)
+        
+        # If we have a foundry (either because user is foundry admin or super admin selected one)
+        if foundry:
+            # Try to find user info (if a regular user is creating ticket)
+            if not is_super_admin:
+                person = db.session.execute(text("""
+                    SELECT person_name, email, phone FROM foundries 
+                    WHERE foundry_name = :foundry AND LOWER(person_name) = LOWER(:username)
+                """), {'foundry': foundry, 'username': username}).fetchone()
+                
+                if person:
+                    user_info = {
+                        'name': person[0],
+                        'email': person[1],
+                        'phone': person[2],
+                        'foundry': foundry
+                    }
+            
+            # Get all foundries for super admin, or just this one for foundry admin
+            foundries = [foundry] if not is_super_admin else [row[0] for row in db.session.execute(
+                text("SELECT DISTINCT foundry_name FROM foundries ORDER BY foundry_name")
+            ).fetchall()]
+            
+            return render_template('create_ticket.html',
+                                  foundries=foundries,
+                                  case_types=case_types,
+                                  user_info=user_info,
+                                  current_user={"username": username, "is_admin": is_super_admin},
+                                  show_foundry_dropdown=is_super_admin,
+                                  selected_foundry=foundry)
         else:
-            foundries = [foundry]
-            # Get user info for regular users
-            if user_result:
-                user_info = {
-                    'name': user_result[1],
-                    'email': user_result[2],
-                    'phone': user_result[3],
-                    'foundry': user_result[0]
-                }
-
-        return render_template('create_ticket.html',
-                           foundries=foundries,
-                           case_types=case_types,
-                           user_info=user_info,
-                           current_user={"username": username, "is_admin": is_super_admin},
-                           show_foundry_dropdown=is_super_admin,
-                           selected_foundry=foundry)
+            return "Foundry not specified", 400
 
     except Exception as e:
-        print(f"Error in new_ticket route: {str(e)}")  # Log the error
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            </head>
-            <body>
-                <div class="container mt-5">
-                    <div class="alert alert-danger">
-                        <h4 class="alert-heading">Error</h4>
-                        <p>An error occurred while processing your request. Please try again.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        """, 500
+        # Handle unexpected errors gracefully
+        return jsonify({'error': f'An error occurred: {str(e)}'}), 500
       
-@app.route('/supporthub/tickets')
+@app.route('/tickets')
 def tickets():
     """Render the tickets page with a dropdown to filter by foundry."""
     query = text("SELECT DISTINCT foundry_name FROM foundries")
     foundries = db.session.execute(query).fetchall()
     return render_template('tickets.html', foundries=[row[0] for row in foundries])
 
-@app.route('/supporthub/api/foundry/details/<foundry_name>', methods=['GET'])
+@app.route('/api/foundry/details/<foundry_name>', methods=['GET'])
 def get_foundry_details(foundry_name):
     """Fetch details for a specific foundry, including names, emails, phones, and case types."""
     try:
@@ -850,7 +608,7 @@ def get_foundry_details(foundry_name):
     except Exception as e:
         print(f"Error fetching foundry details: {str(e)}")
         return jsonify({'error': f'Failed to fetch foundry details: {str(e)}'}), 500
-     
+
 def check_admin_auth():
     """Helper function to check admin authentication."""
     username = request.args.get("user", "")
@@ -858,7 +616,7 @@ def check_admin_auth():
         return False
     return True
 
-@app.route('/supporthub/user-management')
+@app.route('/user-management')
 def user_management():
     """Render the User Management page with user authentication."""
     username = request.args.get("user", "")
@@ -912,7 +670,8 @@ def user_management():
     except Exception as e:
         return f"Database error: {str(e)}", 500
 
-@app.route('/supporthub/api/foundry/add', methods=['POST'])
+
+@app.route('/api/foundry/add', methods=['POST'])
 def add_foundry():
     """Add a new foundry with multiple users."""
     if not check_admin_auth():
@@ -973,7 +732,7 @@ def add_foundry():
         print(f"Error adding foundry: {str(e)}")  # Debug print
         return jsonify({'error': f'Failed to add foundry: {str(e)}'}), 500
      
-@app.route('/supporthub/api/foundry/user/add', methods=['POST'])
+@app.route('/api/foundry/user/add', methods=['POST'])
 def add_user_to_foundry():
     """Add a new user to an existing foundry."""
     if not check_admin_auth():
@@ -1023,7 +782,7 @@ def add_user_to_foundry():
         db.session.rollback()
         return jsonify({'error': f'Failed to add user: {str(e)}'}), 500
 
-@app.route('/supporthub/api/foundry/user/edit/<int:user_id>', methods=['PUT'])
+@app.route('/api/foundry/user/edit/<int:user_id>', methods=['PUT'])
 def edit_foundry_user(user_id):
     """Edit an existing foundry user."""
     if not check_admin_auth():
@@ -1092,7 +851,7 @@ def edit_foundry_user(user_id):
         print(f"Error updating user: {str(e)}")  # Debug print
         return jsonify({'error': f'Failed to update user: {str(e)}'}), 500
    
-@app.route('/supporthub/api/foundry/user/delete/<int:user_id>', methods=['DELETE'])
+@app.route('/api/foundry/user/delete/<int:user_id>', methods=['DELETE'])
 def delete_foundry_user(user_id):
     """Delete a foundry user."""
     if not check_admin_auth():
@@ -1121,12 +880,8 @@ def delete_foundry_user(user_id):
         db.session.rollback()
         return jsonify({'error': f'Failed to delete user: {str(e)}'}), 500
 
-from flask import request, jsonify
-from werkzeug.utils import secure_filename
-from sqlalchemy import text
-import os, random
 
-@app.route('/supporthub/create_ticket', methods=['GET', 'POST'])
+@app.route('/create_ticket', methods=['GET', 'POST'])
 def create_ticket():
     """Handle ticket creation with proper form handling and database interaction."""
     if request.method == 'GET':
@@ -1310,7 +1065,7 @@ def send_ticket_confirmation_email(foundry, user_email, ticket_id, user_name, is
     except Exception as e:
         print(f"Error sending confirmation email: {e}")
         
-@app.route('/supporthub/api/tickets', methods=['GET'])
+@app.route('/api/tickets', methods=['GET'])
 def get_tickets():
     """Fetch all tickets or filter by foundry, ordered by last_updated."""
     foundry_name = request.args.get('foundry_name')
@@ -1345,7 +1100,7 @@ def get_tickets():
     return jsonify(tickets)
 
 
-@app.route('/supporthub/api/tickets/<ticket_id>/file', methods=['GET'])
+@app.route('/api/tickets/<ticket_id>/file', methods=['GET'])
 def get_ticket_file(ticket_id):
     """
     Serve the resolved file for a specific ticket based on ticket ID.
@@ -1365,7 +1120,7 @@ def get_ticket_file(ticket_id):
         return jsonify({'error': 'File not found on server'}), 404
 
 
-@app.route('/supporthub/comments/<ticket_id>', methods=['GET'])
+@app.route('/comments/<ticket_id>', methods=['GET'])
 def get_comments(ticket_id):
     """Fetch comments for a specific ticket."""
     query = text("""
@@ -1380,7 +1135,7 @@ def get_comments(ticket_id):
 
     return jsonify({'comments': result[0]})
 
-@app.route('/supporthub/api/tickets/<ticket_id>/close', methods=['POST'])
+@app.route('/api/tickets/<ticket_id>/close', methods=['POST'])
 def close_ticket_with_file(ticket_id):
     """
     Close a ticket with an optional file and comment.
@@ -1412,7 +1167,7 @@ def close_ticket_with_file(ticket_id):
     return jsonify({'success': True, 'message': 'Ticket closed successfully!'})
 
 
-@app.route('/supporthub/api/tickets/<ticket_id>', methods=['PUT'])
+@app.route('/api/tickets/<ticket_id>', methods=['PUT'])
 def update_ticket_status(ticket_id):
     """
     Update the status of a ticket.
@@ -1434,7 +1189,7 @@ def update_ticket_status(ticket_id):
 
     return jsonify({'success': True, 'message': f'Status updated to {new_status} successfully!'})
 
-@app.route('/supporthub/api/chart-data')
+@app.route('/api/chart-data')
 def chart_data():
     foundry_name = request.args.get('foundry_name', '').lower()
 
@@ -1479,159 +1234,51 @@ def chart_data():
     })
 
 
-@app.route('/supporthub/case-types')
+@app.route('/case-types')
 def case_types():
-    """Render the Case Types page with user authentication."""
-    username = request.args.get("user", "")
-    
-    if not username:
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            </head>
-            <body>
-                <div class="container mt-5">
-                    <div class="alert alert-danger">
-                        <h4 class="alert-heading">Access Denied</h4>
-                        <p>No username provided. Please login to access the Support Hub.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        """, 400
+    """Render the Case Types page."""
+    return render_template('case_types.html', current_user=current_user)
 
-    # Check if user is admin
-    if "admin" not in username.lower():
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            </head>
-            <body>
-                <div class="container mt-5">
-                    <div class="alert alert-danger">
-                        <h4 class="alert-heading">Access Denied</h4>
-                        <p>Only administrators can access this page.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        """, 403
 
-    return render_template('case_types.html', current_user={"username": username, "is_admin": True})
-
-def check_admin_auth():
-    """Helper function to check admin authentication."""
-    username = request.args.get("user", "")
-    if not username or "admin" not in username.lower():
-        return False
-    return True
-
-@app.route('/supporthub/api/case-types/add', methods=['POST'])
+@app.route('/api/case-types/add', methods=['POST'])
 def add_case_type():
-    """Add a new case type with admin authentication."""
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized access'}), 401
+    data = request.json
+    case_type_name = data.get('name').strip()
 
-    try:
-        data = request.json
-        case_type_name = data.get('name', '').strip()
+    # Prevent duplicate entries
+    existing = db.session.execute(text("SELECT COUNT(*) FROM case_types WHERE name = :name"), {'name': case_type_name}).scalar()
+    if existing > 0:
+        return jsonify({'error': 'Case type already exists'}), 400
 
-        if not case_type_name:
-            return jsonify({'error': 'Case type name is required'}), 400
+    # Insert into database
+    db.session.execute(text("INSERT INTO case_types (name) VALUES (:name)"), {'name': case_type_name})
+    db.session.commit()
+    return jsonify({'success': 'Case type added successfully'})
 
-        # Prevent duplicate entries
-        existing = db.session.execute(
-            text("SELECT COUNT(*) FROM case_types WHERE name = :name"), 
-            {'name': case_type_name}
-        ).scalar()
-
-        if existing > 0:
-            return jsonify({'error': 'Case type already exists'}), 400
-
-        # Insert into database
-        db.session.execute(
-            text("INSERT INTO case_types (name) VALUES (:name)"), 
-            {'name': case_type_name}
-        )
-        db.session.commit()
-        return jsonify({'success': 'Case type added successfully'})
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/supporthub/api/case-types/<int:case_type_id>', methods=['PUT'])
+@app.route('/api/case-types/<int:case_type_id>', methods=['PUT'])
 def edit_case_type(case_type_id):
-    """Edit a case type with admin authentication."""
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized access'}), 401
+    data = request.json
+    new_name = data.get('name').strip()
 
-    try:
-        data = request.json
-        new_name = data.get('name', '').strip()
+    # Check if new name already exists
+    existing = db.session.execute(text("SELECT COUNT(*) FROM case_types WHERE name = :name"), {'name': new_name}).scalar()
+    if existing > 0:
+        return jsonify({'error': 'Case type already exists'}), 400
 
-        if not new_name:
-            return jsonify({'error': 'Case type name is required'}), 400
+    # Update in database
+    db.session.execute(text("UPDATE case_types SET name = :name WHERE id = :case_type_id"), {'name': new_name, 'case_type_id': case_type_id})
+    db.session.commit()
+    return jsonify({'success': 'Case type updated successfully'})
 
-        # Check if new name already exists
-        existing = db.session.execute(
-            text("SELECT COUNT(*) FROM case_types WHERE name = :name AND id != :id"), 
-            {'name': new_name, 'id': case_type_id}
-        ).scalar()
-
-        if existing > 0:
-            return jsonify({'error': 'Case type already exists'}), 400
-
-        # Update in database
-        db.session.execute(
-            text("UPDATE case_types SET name = :name WHERE id = :case_type_id"), 
-            {'name': new_name, 'case_type_id': case_type_id}
-        )
-        db.session.commit()
-        return jsonify({'success': 'Case type updated successfully'})
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/supporthub/api/case-types/<int:case_type_id>', methods=['DELETE'])
+@app.route('/api/case-types/<int:case_type_id>', methods=['DELETE'])
 def delete_case_type(case_type_id):
-    """Delete a case type with admin authentication."""
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized access'}), 401
+    db.session.execute(text("DELETE FROM case_types WHERE id = :case_type_id"), {'case_type_id': case_type_id})
+    db.session.commit()
+    return jsonify({'success': 'Case type deleted successfully'})
 
-    try:
-        # Check if case type is in use
-        in_use = db.session.execute(
-            text("SELECT COUNT(*) FROM tickets WHERE issue IN (SELECT name FROM case_types WHERE id = :id)"),
-            {'id': case_type_id}
-        ).scalar()
-
-        if in_use > 0:
-            return jsonify({'error': 'Cannot delete case type that is in use'}), 400
-
-        db.session.execute(
-            text("DELETE FROM case_types WHERE id = :case_type_id"), 
-            {'case_type_id': case_type_id}
-        )
-        db.session.commit()
-        return jsonify({'success': 'Case type deleted successfully'})
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/supporthub/api/case-types', methods=['GET'])
+@app.route('/api/case-types', methods=['GET'])
 def get_case_types():
-    """Fetch all case types from the database with user authentication."""
-    username = request.args.get("user", "")
-    if not username:
-        return jsonify({'error': 'Authentication required'}), 401
-
+    """Fetch all case types from the database."""
     try:
         query = text("SELECT id, name FROM case_types ORDER BY id")
         result = db.session.execute(query).fetchall()
@@ -1647,4 +1294,4 @@ def get_case_types():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True)
