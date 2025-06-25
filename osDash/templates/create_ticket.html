@@ -8,7 +8,7 @@ Create Ticket
 <div id="form-section" class="form-container">
     <div class="d-flex justify-content-between align-items-center">
         <h2 class="mb-0">Open a New Ticket</h2>
-        <a href="/supporthub" class="btn btn-secondary">Back</a>
+        <a href="/supporthub/?user={{ current_user.username }}" class="btn btn-secondary">Back</a>
     </div>
 
     <form id="ticketForm" action="/create_ticket" method="POST" enctype="multipart/form-data">

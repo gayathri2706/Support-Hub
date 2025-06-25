@@ -13,11 +13,6 @@
         "password": "vdag eacc cwdw uvfx",
         "default_sender": ["Support Hub", "ticketsandman@gmail.com"]
     },
-    "server": {
-        "base_url": "/supporthub",
-        "host": "127.0.0.1",
-        "port": 5000
-    },
     "database": {
         "driver": "mysql+pymysql",
         "host": "127.0.0.1",

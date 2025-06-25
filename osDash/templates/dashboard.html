@@ -16,7 +16,7 @@ Dashboard
             </select>
         </div>
         <a href="#" id="openTicketButton" class="btn btn-danger me-2">Open Ticket</a>
-        <a href="/supporthub/?user={{ username }}" class="btn btn-secondary">Back</a>
+        <a href="/supporthub/?user={{ current_user.username }}" class="btn btn-secondary">Back</a>
 
     </div>
 </div>
@@ -383,8 +383,8 @@ document.getElementById('openTicketButton').addEventListener('click', () => {
     const foundry = "{{ foundry }}";
     const username = "{{ username }}";
     const url = foundry === "All"
-        ? `/new_ticket?username=${encodeURIComponent(username)}`
-        : `/new_ticket?foundry=${encodeURIComponent(foundry)}&username=${encodeURIComponent(username)}`;
+        ? `/supporthub/new_ticket?username=${encodeURIComponent(username)}`
+        : `/supporthub/new_ticket?foundry=${encodeURIComponent(foundry)}&username=${encodeURIComponent(username)}`;
     window.location.href = url;
 });
 

@@ -1,11 +1,11 @@
-{% extends "base.html" %}
+={% extends "base.html" %}
 
 {% block content %}
 <div class="header-container justify-content-between align-items-center mb-4">
     <div class="d-flex align-items-center gap-1">
         <h3 class="mb-0"><strong>Manage Assign To</strong></h3>
     </div>
-    <a href="/supporthub" class="btn btn-secondary">Back</a>
+        <a href="/supporthub/?user={{ current_user.username }}" class="btn btn-secondary">Back</a>
 </div>
 
 <div class="container mt-4">
