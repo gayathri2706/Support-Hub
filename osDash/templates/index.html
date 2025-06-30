@@ -17,7 +17,7 @@
         {% endif %}
     </div>
     {% if current_user and current_user.is_admin %}
-        <a href="/dashboard?user={{ current_user.username }}" class="btn btn-primary">Dashboard</a>
+        <a href="/supporthub/dashboard?user={{ current_user.username }}" class="btn btn-primary">Dashboard</a>
     {% endif %}
 
 </div>
@@ -156,7 +156,7 @@
 <div class="modal-overlay" onclick="closeFeedbackModal()"></div>
 <div class="feedback-modal rounded p-4 bg-light">
     <h2 class="text-primary">Customer Feedback</h2>
-    <form id="feedback-form" method="POST" action="/send-feedback">
+    <form id="feedback-form" method="POST" action="/supporthub/send-feedback">
 
         <div class="mb-3">
             <label for="name" class="form-label">Your name:</label>
@@ -322,7 +322,7 @@ document.getElementById('openTicketButton').addEventListener('click', () => {
             ticketRow.after(newRow);
 
             // Fetch and display comments
-            fetch(`/comments/${ticketId}`)
+            fetch(`/supporthub/comments/${ticketId}`)
                 .then(response => response.json())
                 .then(data => {
                     const commentBox = newRow.querySelector('div');
@@ -380,7 +380,7 @@ document.getElementById('openTicketButton').addEventListener('click', () => {
         const formData = new FormData(e.target); // Use FormData directly
 
         try {
-    const response = await fetch('/send-feedback', {
+    const response = await fetch('/supporthub/send-feedback', {
         method: 'POST',
         body: formData, // Send as FormData
     });

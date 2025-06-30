@@ -21,10 +21,10 @@
     <!-- Back Button -->
       <a href="/supporthub/?user={{ current_user.username }}" class="btn btn-secondary">Back</a>
 </div>
-
+                                
 <script>
 function fetchCaseTypes() {
-    fetch('/api/case-types')
+    fetch('/supporthub/api/case-types')
         .then(response => response.json())
         .then(caseTypes => {
             const caseTypeList = document.getElementById("caseTypeList");
@@ -62,7 +62,7 @@ function addCaseType() {
         return;
     }
 
-    fetch('/api/case-types/add', {
+    fetch('/supporthub/api/case-types/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newCaseType })
@@ -87,7 +87,7 @@ function editCaseType(caseTypeId, currentName) {
     const newName = prompt("Edit case type name:", currentName);
     if (!newName || newName.trim() === currentName) return;
 
-    fetch(`/api/case-types/${caseTypeId}`, {
+    fetch(`/supporthub/api/case-types/${caseTypeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName.trim() })
@@ -110,7 +110,7 @@ function editCaseType(caseTypeId, currentName) {
 function deleteCaseType(caseTypeId, name) {
     if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
 
-    fetch(`/api/case-types/${caseTypeId}`, {
+    fetch(`/supporthub/api/case-types/${caseTypeId}`, {
         method: 'DELETE'
     })
     .then(response => response.json())

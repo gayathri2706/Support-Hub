@@ -36,7 +36,7 @@
 
 <script>
     function fetchAssignees() {
-        fetch('/api/assign-to')
+        fetch('/supporthub/api/assign-to')
             .then(response => response.json())
             .then(assignees => {
                 const assignToList = document.getElementById("assignToList");
@@ -74,7 +74,7 @@
             return;
         }
 
-        fetch('/api/assign-to/add', {
+        fetch('/supporthub/api/assign-to/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: newName, email: newEmail })
@@ -96,7 +96,7 @@
         const newEmail = prompt("Edit email:", currentEmail);
         if (!newName || !newEmail) return;
 
-        fetch(`/api/assign-to/${assigneeId}`, {
+        fetch(`/supporthub/api/assign-to/${assigneeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: newName.trim(), email: newEmail.trim() })
@@ -116,7 +116,7 @@
     function deleteAssignee(assigneeId, name) {
         if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
 
-        fetch(`/api/assign-to/${assigneeId}`, { method: 'DELETE' })
+        fetch(`/supporthub/api/assign-to/${assigneeId}`, { method: 'DELETE' })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -129,7 +129,7 @@
     }
 
     function toggleAdmin(assigneeId, isChecked) {
-        fetch(`/api/assign-to/admin/${assigneeId}`, {
+        fetch(`/supporthub/api/assign-to/admin/${assigneeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ is_admin: isChecked })
@@ -154,7 +154,7 @@
             });
         });
 
-        fetch('/api/assign-to/update-admin-status', {
+        fetch('/supporthub/api/assign-to/update-admin-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ updates })

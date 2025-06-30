@@ -53,7 +53,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Max upload size = 16MB
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/api/upload', methods=['POST'])
+@app.route('/supporthub/api/upload', methods=['POST'])
 def upload_file():
     """Handle file uploads."""
     if 'file' not in request.files:
@@ -67,7 +67,7 @@ def upload_file():
 
     return jsonify({'error': 'Invalid file type'}), 400
 
-@app.route('/uploads/<filename>', methods=['GET'])
+@app.route('/supporthub/uploads/<filename>', methods=['GET'])
 def serve_file(filename):
     """Serve uploaded files with download option."""
     try:
@@ -75,7 +75,7 @@ def serve_file(filename):
     except FileNotFoundError:
         return jsonify({'error': 'File not found'}), 404
 
-@app.route('/uploads/user_files/<filename>', methods=['GET'])
+@app.route('/supporthub/uploads/user_files/<filename>', methods=['GET'])
 def serve_user_file(filename):
     """Serve uploaded user files with download option."""
     try:
@@ -106,7 +106,7 @@ app.config.update(
 
 mail = Mail(app)
 
-@app.route('/send-feedback', methods=['POST'])
+@app.route('/supporthub/send-feedback', methods=['POST'])
 def send_feedback():
     """Send feedback via email to dynamically selected admins."""
     try:
@@ -145,7 +145,7 @@ def send_feedback():
         print(f"Error occurred: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
-@app.route('/')
+@app.route('/supporthub/')
 def index():
     """Render the homepage with user authentication from Sandman using user_name."""
     username = request.args.get("user", "").replace(" ", "").lower()  # Get and normalize the username
@@ -203,7 +203,7 @@ def index():
     # If we reach here, we didn't find a matching user - this was the missing return statement
     return "Error: Invalid user - could not find matching username", 401
 
-@app.route('/dashboard', methods=['GET', 'POST'])
+@app.route('/supporthub/dashboard', methods=['GET', 'POST'])
 def dashboard():
     """
     Render the dashboard for super admin or foundry-level admin.
@@ -267,7 +267,7 @@ def dashboard():
                            tickets=tickets,
                            foundry=foundry_name)
 
-@app.route('/api/assign-to', methods=['GET'])
+@app.route('/supporthub/api/assign-to', methods=['GET'])
 def get_assignees():
     """Fetch all assignees from the database including admin status."""
     try:
@@ -278,7 +278,7 @@ def get_assignees():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
   
-@app.route('/api/assignable-users', methods=['GET'])
+@app.route('/supporthub/api/assignable-users', methods=['GET'])
 def get_assignable_users():
     """Fetch assignable users from the database."""
     try:
@@ -291,7 +291,7 @@ def get_assignable_users():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/tickets/<ticket_id>/assign', methods=['POST'])
+@app.route('/supporthub/api/tickets/<ticket_id>/assign', methods=['POST'])
 def assign_ticket(ticket_id):
     data = request.json
     assignee_id = data.get('assignee_id')
@@ -334,7 +334,7 @@ def assign_ticket(ticket_id):
     return jsonify({'success': True, 'message': 'Ticket assigned and email sent successfully!'})
 
     
-@app.route('/api/foundry/user/<foundry>/<username>', methods=['GET'])
+@app.route('/supporthub/api/foundry/user/<foundry>/<username>', methods=['GET'])
 def get_user_details(foundry, username):
     # Debugging line to check if the route is hit
     print(f"Fetching user for foundry: {foundry}, username: {username}")
@@ -358,41 +358,77 @@ def get_user_details(foundry, username):
         return jsonify({"error": "User not found"}), 404
     
 # Modify the get_user_details route to properly fetch by username
-@app.route('/api/foundry/user/<username>', methods=['GET'])
+@app.route('/supporthub/api/foundry/user/<username>', methods=['GET'])
 def get_user_details_by_username(username):
-    """Fetch user details by username from any foundry."""
-    print(f"Fetching user details for username: {username}")
-    
-    # Execute query to find user by username in any foundry
-    user = db.session.execute(
-        text("""
-            SELECT foundry_name, person_name, email, phone 
-            FROM foundries 
-            WHERE LOWER(user_name) = LOWER(:username) OR LOWER(person_name) = LOWER(:username)
-        """),
-        {"username": username}
-    ).fetchone()
+    """Return:
+       - If admin → all foundries + all users
+       - If regular → single user details
+    """
+    try:
+        if 'admin' in username.lower():
+            # Admin gets all users
+            query = text("""
+                SELECT f.id, f.foundry_name, f.pkey, f.user_name, f.person_name, f.email, f.phone, f.is_admin 
+                FROM foundries f
+                ORDER BY f.foundry_name, f.person_name
+            """)
+            users = db.session.execute(query).fetchall()
 
-    # Check if the user exists in the database
-    if user:
-        # Return user details in JSON format
-        return jsonify({
-            "foundry": user[0],
-            "name": user[1],
-            "email": user[2],
-            "phone": user[3]
-        })
-    else:
-        # Return error message if the user is not found
-        return jsonify({"error": "User not found"}), 404
-    
+            if not users:
+                return jsonify({'error': 'No users found'}), 404
+
+            users_data = [{
+                'id': row[0],
+                'foundry_name': row[1],
+                'pkey': row[2],
+                'user_name': row[3],
+                'person_name': row[4],
+                'email': row[5],
+                'phone': row[6],
+                'is_admin': bool(row[7])
+            } for row in users]
+
+            foundries = sorted(set(user['foundry_name'] for user in users_data))
+
+            return jsonify({
+                'is_admin': True,
+                'foundries': foundries,
+                'users': users_data
+            })
+
+        else:
+            # Regular user
+            result = db.session.execute(
+                text("""
+                    SELECT foundry_name, person_name, email, phone 
+                    FROM foundries 
+                    WHERE LOWER(user_name) = LOWER(:username) OR LOWER(person_name) = LOWER(:username)
+                    LIMIT 1
+                """),
+                {"username": username}
+            ).fetchone()
+
+            if not result:
+                return jsonify({'error': 'User not found'}), 404
+
+            return jsonify({
+                'is_admin': False,
+                'foundry': result[0],
+                'name': result[1],
+                'email': result[2],
+                'phone': result[3]
+            })
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to fetch user: {str(e)}'}), 500
+
 # Assign To Management Page
-@app.route('/assign-to')
+@app.route('/supporthub/assign-to')
 def assign_to_page():
     return render_template('assign_to.html', current_user=current_user)
 
 # Add New Assignee API
-@app.route('/api/assign-to/add', methods=['POST'])
+@app.route('/supporthub/api/assign-to/add', methods=['POST'])
 def add_assignee():
     """Add a new assignee to the database."""
     try:
@@ -418,7 +454,7 @@ def add_assignee():
         return jsonify({'error': f'Failed to add assignee: {str(e)}'}), 500
 
 # Edit Assignee API
-@app.route('/api/assign-to/<int:assignee_id>', methods=['PUT'])
+@app.route('/supporthub/api/assign-to/<int:assignee_id>', methods=['PUT'])
 def edit_assignee(assignee_id):
     """Edit an existing assignee in the database."""
     try:
@@ -438,7 +474,7 @@ def edit_assignee(assignee_id):
         return jsonify({'error': f'Failed to update assignee: {str(e)}'}), 500
 
 # Delete Assignee API
-@app.route('/api/assign-to/<int:assignee_id>', methods=['DELETE'])
+@app.route('/supporthub/api/assign-to/<int:assignee_id>', methods=['DELETE'])
 def delete_assignee(assignee_id):
     """Delete an assignee from the database."""
     try:
@@ -448,7 +484,7 @@ def delete_assignee(assignee_id):
     except Exception as e:
         return jsonify({'error': f'Failed to delete assignee: {str(e)}'}), 500
 
-@app.route('/api/assign-to/admin/<int:assignee_id>', methods=['PUT'])
+@app.route('/supporthub/api/assign-to/admin/<int:assignee_id>', methods=['PUT'])
 def update_admin_status(assignee_id):
     """Update admin status dynamically and send notification if assigned as admin."""
     try:
@@ -483,7 +519,7 @@ def update_admin_status(assignee_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-@app.route('/api/foundries')
+@app.route('/supporthub/api/foundries')
 def get_foundries():
     result = db.session.execute(text("SELECT DISTINCT foundry_name FROM foundries"))
     foundries = [row[0] for row in result]
@@ -491,7 +527,7 @@ def get_foundries():
 
 
 
-@app.route('/new_ticket')
+@app.route('/supporthub/new_ticket')
 def new_ticket():
     """
     Render the Create Ticket form with appropriate options based on user role.
@@ -567,14 +603,14 @@ def new_ticket():
         # Handle unexpected errors gracefully
         return jsonify({'error': f'An error occurred: {str(e)}'}), 500
       
-@app.route('/tickets')
+@app.route('/supporthub/tickets')
 def tickets():
     """Render the tickets page with a dropdown to filter by foundry."""
     query = text("SELECT DISTINCT foundry_name FROM foundries")
     foundries = db.session.execute(query).fetchall()
     return render_template('tickets.html', foundries=[row[0] for row in foundries])
 
-@app.route('/api/foundry/details/<foundry_name>', methods=['GET'])
+@app.route('/supporthub/api/foundry/details/<foundry_name>', methods=['GET'])
 def get_foundry_details(foundry_name):
     """Fetch details for a specific foundry, including names, emails, phones, and case types."""
     try:
@@ -616,7 +652,7 @@ def check_admin_auth():
         return False
     return True
 
-@app.route('/user-management')
+@app.route('/supporthub/user-management')
 def user_management():
     """Render the User Management page with user authentication."""
     username = request.args.get("user", "")
@@ -671,7 +707,7 @@ def user_management():
         return f"Database error: {str(e)}", 500
 
 
-@app.route('/api/foundry/add', methods=['POST'])
+@app.route('/supporthub/api/foundry/add', methods=['POST'])
 def add_foundry():
     """Add a new foundry with multiple users."""
     if not check_admin_auth():
@@ -732,7 +768,7 @@ def add_foundry():
         print(f"Error adding foundry: {str(e)}")  # Debug print
         return jsonify({'error': f'Failed to add foundry: {str(e)}'}), 500
      
-@app.route('/api/foundry/user/add', methods=['POST'])
+@app.route('/supporthub/api/foundry/user/add', methods=['POST'])
 def add_user_to_foundry():
     """Add a new user to an existing foundry."""
     if not check_admin_auth():
@@ -782,7 +818,7 @@ def add_user_to_foundry():
         db.session.rollback()
         return jsonify({'error': f'Failed to add user: {str(e)}'}), 500
 
-@app.route('/api/foundry/user/edit/<int:user_id>', methods=['PUT'])
+@app.route('/supporthub/api/foundry/user/edit/<int:user_id>', methods=['PUT'])
 def edit_foundry_user(user_id):
     """Edit an existing foundry user."""
     if not check_admin_auth():
@@ -851,7 +887,7 @@ def edit_foundry_user(user_id):
         print(f"Error updating user: {str(e)}")  # Debug print
         return jsonify({'error': f'Failed to update user: {str(e)}'}), 500
    
-@app.route('/api/foundry/user/delete/<int:user_id>', methods=['DELETE'])
+@app.route('/supporthub/api/foundry/user/delete/<int:user_id>', methods=['DELETE'])
 def delete_foundry_user(user_id):
     """Delete a foundry user."""
     if not check_admin_auth():
@@ -881,7 +917,7 @@ def delete_foundry_user(user_id):
         return jsonify({'error': f'Failed to delete user: {str(e)}'}), 500
 
 
-@app.route('/create_ticket', methods=['GET', 'POST'])
+@app.route('/supporthub/create_ticket', methods=['GET', 'POST'])
 def create_ticket():
     """Handle ticket creation with proper form handling and database interaction."""
     if request.method == 'GET':
@@ -1065,7 +1101,7 @@ def send_ticket_confirmation_email(foundry, user_email, ticket_id, user_name, is
     except Exception as e:
         print(f"Error sending confirmation email: {e}")
         
-@app.route('/api/tickets', methods=['GET'])
+@app.route('/supporthub/api/tickets', methods=['GET'])
 def get_tickets():
     """Fetch all tickets or filter by foundry, ordered by last_updated."""
     foundry_name = request.args.get('foundry_name')
@@ -1100,7 +1136,7 @@ def get_tickets():
     return jsonify(tickets)
 
 
-@app.route('/api/tickets/<ticket_id>/file', methods=['GET'])
+@app.route('/supporthub/api/tickets/<ticket_id>/file', methods=['GET'])
 def get_ticket_file(ticket_id):
     """
     Serve the resolved file for a specific ticket based on ticket ID.
@@ -1120,7 +1156,7 @@ def get_ticket_file(ticket_id):
         return jsonify({'error': 'File not found on server'}), 404
 
 
-@app.route('/comments/<ticket_id>', methods=['GET'])
+@app.route('/supporthub/comments/<ticket_id>', methods=['GET'])
 def get_comments(ticket_id):
     """Fetch comments for a specific ticket."""
     query = text("""
@@ -1135,7 +1171,7 @@ def get_comments(ticket_id):
 
     return jsonify({'comments': result[0]})
 
-@app.route('/api/tickets/<ticket_id>/close', methods=['POST'])
+@app.route('/supporthub/api/tickets/<ticket_id>/close', methods=['POST'])
 def close_ticket_with_file(ticket_id):
     """
     Close a ticket with an optional file and comment.
@@ -1167,7 +1203,7 @@ def close_ticket_with_file(ticket_id):
     return jsonify({'success': True, 'message': 'Ticket closed successfully!'})
 
 
-@app.route('/api/tickets/<ticket_id>', methods=['PUT'])
+@app.route('/supporthub/api/tickets/<ticket_id>', methods=['PUT'])
 def update_ticket_status(ticket_id):
     """
     Update the status of a ticket.
@@ -1189,7 +1225,7 @@ def update_ticket_status(ticket_id):
 
     return jsonify({'success': True, 'message': f'Status updated to {new_status} successfully!'})
 
-@app.route('/api/chart-data')
+@app.route('/supporthub/api/chart-data')
 def chart_data():
     foundry_name = request.args.get('foundry_name', '').lower()
 
@@ -1234,13 +1270,13 @@ def chart_data():
     })
 
 
-@app.route('/case-types')
+@app.route('/supporthub/case-types')
 def case_types():
     """Render the Case Types page."""
     return render_template('case_types.html', current_user=current_user)
 
 
-@app.route('/api/case-types/add', methods=['POST'])
+@app.route('/supporthub/api/case-types/add', methods=['POST'])
 def add_case_type():
     data = request.json
     case_type_name = data.get('name').strip()
@@ -1255,7 +1291,7 @@ def add_case_type():
     db.session.commit()
     return jsonify({'success': 'Case type added successfully'})
 
-@app.route('/api/case-types/<int:case_type_id>', methods=['PUT'])
+@app.route('/supporthub/api/case-types/<int:case_type_id>', methods=['PUT'])
 def edit_case_type(case_type_id):
     data = request.json
     new_name = data.get('name').strip()
@@ -1270,13 +1306,13 @@ def edit_case_type(case_type_id):
     db.session.commit()
     return jsonify({'success': 'Case type updated successfully'})
 
-@app.route('/api/case-types/<int:case_type_id>', methods=['DELETE'])
+@app.route('/supporthub/api/case-types/<int:case_type_id>', methods=['DELETE'])
 def delete_case_type(case_type_id):
     db.session.execute(text("DELETE FROM case_types WHERE id = :case_type_id"), {'case_type_id': case_type_id})
     db.session.commit()
     return jsonify({'success': 'Case type deleted successfully'})
 
-@app.route('/api/case-types', methods=['GET'])
+@app.route('/supporthub/api/case-types', methods=['GET'])
 def get_case_types():
     """Fetch all case types from the database."""
     try:

@@ -132,7 +132,7 @@
     });
         
     function loadFoundryDropdown() {
-        fetch(getAuthenticatedUrl("/api/foundries"))
+        fetch(getAuthenticatedUrl("/supporthub/api/foundries"))
             .then(response => response.json())
             .then(data => {
                 const dropdown = document.getElementById("foundryDropdown");
@@ -192,7 +192,7 @@
             }
 
             // Send data to server
-            fetch(getAuthenticatedUrl("/api/foundry/add"), {
+            fetch(getAuthenticatedUrl("/supporthub/api/foundry/add"), {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -273,7 +273,7 @@
             return;
         }
 
-        fetch(getAuthenticatedUrl("/api/foundry/user/add"), {
+        fetch(getAuthenticatedUrl("/supporthub/api/foundry/user/add"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData)
@@ -311,7 +311,7 @@
 
         console.log("Fetching details for foundry:", foundry);  // Debug log
 
-        fetch(getAuthenticatedUrl(`/api/foundry/details/${foundry}`))
+        fetch(getAuthenticatedUrl(`/supporthub/api/foundry/details/${foundry}`))
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -415,7 +415,7 @@
     function deleteEntry(id) {
         if (!confirm("Are you sure you want to delete this user?")) return;
 
-        fetch(getAuthenticatedUrl(`/api/foundry/user/delete/${id}`), { 
+        fetch(getAuthenticatedUrl(`/supporthub/api/foundry/user/delete/${id}`), { 
             method: "DELETE" 
         })
         .then(response => response.json())
@@ -513,7 +513,7 @@ function saveUserEdit(userId) {
     }
 
     // Send update request
-    fetch(getAuthenticatedUrl(`/api/foundry/user/edit/${userId}`), {
+    fetch(getAuthenticatedUrl(`/supporthub/api/foundry/user/edit/${userId}`), {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',

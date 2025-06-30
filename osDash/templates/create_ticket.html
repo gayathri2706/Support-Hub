@@ -11,7 +11,7 @@ Create Ticket
         <a href="/supporthub/?user={{ current_user.username }}" class="btn btn-secondary">Back</a>
     </div>
 
-    <form id="ticketForm" action="/create_ticket" method="POST" enctype="multipart/form-data">
+    <form id="ticketForm" action="/supporthub/create_ticket" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="username" id="user_name" value="">
 
         <div class="form-row">
@@ -80,40 +80,37 @@ Create Ticket
     </form>
 
 <script>
+
 function loadFoundryUsers() {
     const foundry = document.getElementById('foundryDropdown').value;
+    const nameInput = document.getElementById('foundryName');
     const nameDropdown = document.getElementById('foundryNameDropdown');
-    
-    if (!foundry) {
-        nameDropdown.innerHTML = '<option value="">-- Select Name --</option>';
-        nameDropdown.style.display = "none";
-        document.getElementById('foundryName').style.display = "none";
-        document.getElementById('foundryEmail').value = '';
-        document.getElementById('foundryPhone').value = '';
-        return;
-    }
-    
-    document.getElementById('foundryName').style.display = "none";
+    const emailField = document.getElementById('foundryEmail');
+    const phoneField = document.getElementById('foundryPhone');
+
+    nameInput.style.display = "none";
     nameDropdown.style.display = "block";
-    
-    fetch(`/api/foundry/details/${encodeURIComponent(foundry)}`)
+    emailField.value = '';
+    phoneField.value = '';
+    nameDropdown.innerHTML = '<option value="">-- Select Name --</option>';
+
+    fetch(`/supporthub/api/foundry/details/${encodeURIComponent(foundry)}`)
         .then(response => response.json())
         .then(data => {
             if (data.names && data.names.length > 0) {
-                nameDropdown.innerHTML = '<option value="">-- Select Name --</option>';
                 data.names.forEach(person => {
                     const option = document.createElement('option');
-                    option.value = person.name;
-                    option.textContent = person.name;
+                    option.value = person.person_name;
+                    option.textContent = person.person_name;
                     option.dataset.email = person.email || '';
                     option.dataset.phone = person.phone || '';
                     nameDropdown.appendChild(option);
                 });
-                
-                nameDropdown.onchange = function() {
+
+                nameDropdown.onchange = function () {
                     const selectedOption = this.options[this.selectedIndex];
-                    document.getElementById('foundryEmail').value = selectedOption.dataset.email || '';
-                    document.getElementById('foundryPhone').value = selectedOption.dataset.phone || '';
+                    emailField.value = selectedOption.dataset.email || '';
+                    phoneField.value = selectedOption.dataset.phone || '';
                 };
             }
         })
@@ -124,7 +121,8 @@ function loadFoundryUsers() {
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
-    const foundryInput = document.getElementById("foundryInput");
+    const foundryInput = document.getElementById("foundryInput");         // for normal users
+    const foundryDropdown = document.getElementById("foundryDropdown");   // for admin
     const nameInput = document.getElementById("foundryName");
     const nameDropdown = document.getElementById("foundryNameDropdown");
     const emailInput = document.getElementById("foundryEmail");
@@ -136,81 +134,89 @@ document.addEventListener("DOMContentLoaded", async function () {
         return urlParams.get(param);
     }
 
-    const foundry = getQueryParam("foundry");
-    const username = decodeURIComponent(getQueryParam("user") || getQueryParam("username") || "");
+    const rawUsername = getQueryParam("user") || getQueryParam("username") || "";
+    const username = decodeURIComponent(rawUsername);
+    const rawFoundry = getQueryParam("foundry") || "";
+    const foundryFromURL = decodeURIComponent(rawFoundry);
+    const isAdmin = username.toLowerCase().includes("admin");
 
-    if (username) {
-        userNameField.value = username;
+    if (userNameField) userNameField.value = username;
 
-        try {
-            const userResponse = await fetch(`/api/foundry/user/${encodeURIComponent(username)}`);
-            const userData = await userResponse.json();
+    let selectedFoundry = "";
 
-            if (userResponse.ok) {
-                foundryInput.value = userData.foundry;
-                nameInput.value = userData.name;
-                nameInput.style.display = "block";
-                nameDropdown.style.display = "none";
-                emailInput.value = userData.email || '';
-                phoneInput.value = userData.phone || '';
-                return;
-            }
-        } catch (error) {
-            console.error("Error fetching user data:", error);
+    if (isAdmin && foundryDropdown) {
+        // Admin: auto-select first real foundry
+        if (foundryDropdown.options.length > 1) {
+            foundryDropdown.selectedIndex = 1; // skip "-- Select Foundry --"
+            selectedFoundry = foundryDropdown.value;
+            foundryDropdown.dispatchEvent(new Event("change"));
+        } else {
+            alert("No foundries available.");
+            return;
         }
+    } else if (foundryInput) {
+        selectedFoundry = foundryInput.value || foundryFromURL;
     }
 
-    if (!foundry) {
-        alert("Missing foundry information in URL.");
+    // Still no foundry selected
+    if (!selectedFoundry) {
+        alert("Missing or invalid foundry information.");
         return;
     }
 
-    foundryInput.value = foundry;
-
     try {
-        const response = await fetch(`/api/foundry/details/${foundry}`);
+        const response = await fetch(`/supporthub/api/foundry/details/${encodeURIComponent(selectedFoundry)}`);
         const data = await response.json();
 
-        if (response.ok) {
-            let matchedUser = null;
-            if (username) {
-                matchedUser = data.names.find(person =>
-                    person.name.toLowerCase() === username.toLowerCase() ||
-                    (person.user_name && person.user_name.toLowerCase() === username.toLowerCase())
-                );
-            }
-
-            if (matchedUser) {
-                nameInput.value = matchedUser.name;
-                nameInput.style.display = "block";
-                nameDropdown.style.display = "none";
-                emailInput.value = matchedUser.email || '';
-                phoneInput.value = matchedUser.phone || '';
-            } else {
-                nameInput.style.display = "none";
-                nameDropdown.style.display = "block";
-                nameDropdown.innerHTML = `<option value="">-- Select Name --</option>`;
-
-                data.names.forEach(person => {
-                    const option = document.createElement("option");
-                    option.value = person.name;
-                    option.textContent = person.name;
-                    option.dataset.email = person.email || "";
-                    option.dataset.phone = person.phone || "";
-                    nameDropdown.appendChild(option);
-                });
-
-                nameDropdown.addEventListener("change", function () {
-                    const selected = this.options[this.selectedIndex];
-                    emailInput.value = selected.dataset.email || "";
-                    phoneInput.value = selected.dataset.phone || "";
-                });
-            }
-        } else {
-            alert(data.error || "Error fetching foundry details.");
+        if (!response.ok) {
+            alert(data.error || "Failed to fetch foundry details.");
+            return;
         }
+
+        let matchedUser = null;
+
+        if (username) {
+            matchedUser = data.names.find(person =>
+            (person.person_name || "").toLowerCase() === username.toLowerCase() ||
+            (person.user_name || "").toLowerCase() === username.toLowerCase()
+        );
+
+        }
+
+        if (!matchedUser && data.names.length > 0) {
+            matchedUser = data.names[0]; // fallback to first person
+        }
+
+        if (matchedUser) {
+            nameInput.value = matchedUser.name || matchedUser.person_name || '';
+            nameInput.style.display = "block";
+            nameDropdown.style.display = "none";
+            emailInput.value = matchedUser.email || "";
+            phoneInput.value = matchedUser.phone || "";
+        } else {
+            // No match — show dropdown
+            nameInput.style.display = "none";
+            nameDropdown.style.display = "block";
+            nameDropdown.innerHTML = `<option value="">-- Select Name --</option>`;
+
+            data.names.forEach(person => {
+                const option = document.createElement('option');
+                option.value = person.person_name || "";
+                option.textContent = person.person_name || "";
+                option.dataset.email = person.email || "";
+                option.dataset.phone = person.phone || "";
+                nameDropdown.appendChild(option);
+            });
+            nameDropdown.addEventListener("change", function () {
+                const selected = this.options[this.selectedIndex];
+                emailInput.value = selected.dataset.email || "";
+                phoneInput.value = selected.dataset.phone || "";
+            });
+        }
+
     } catch (error) {
         console.error("Error fetching foundry details:", error);
+        alert("An error occurred while loading data.");
     }
 });
 
@@ -235,7 +241,7 @@ document.getElementById('ticketForm').addEventListener('submit', async function 
     const formData = new FormData(this);
 
     try {
-        const response = await fetch('/create_ticket', {
+        const response = await fetch('/supporthub/create_ticket', {
             method: 'POST',
             body: formData
         });
@@ -245,7 +251,7 @@ document.getElementById('ticketForm').addEventListener('submit', async function 
         if (response.ok && result.success) {
             alert(result.message);
             const username = document.getElementById("user_name").value;
-            window.location.href = "/?user=" + encodeURIComponent(username);
+            window.location.href = "/supporthub/?user=" + encodeURIComponent(username);
         } else {
             alert('Ticket creation failed: ' + (result.message || 'Unknown error'));
         }
