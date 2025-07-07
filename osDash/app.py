@@ -213,45 +213,42 @@ def dashboard():
     if not username:
         return "Error: Username missing", 400
 
-    print(f"Username received: {username}")  # Debugging line
+    print(f"🔍 DEBUG - Username received: {username}")  # Debugging line
 
     # Super admin: see all tickets
     if "admin" in username.lower():
         foundry_name = "All"
-        # Query for all tickets (Super Admin)
-        tickets = db.session.execute(text("""
+        tickets_result = db.session.execute(text("""
             SELECT t.ticket_id, t.date_created, t.foundry_name, t.issue, t.issue_description, 
                    t.priority, t.status, t.resolved_time, t.attachment_file,
                    a.name AS assigned_to, a.email AS assigned_email
             FROM tickets t
             LEFT JOIN assign_to a ON t.assign_to = a.name
             ORDER BY COALESCE(t.resolved_time, t.date_created) DESC
-        """)).fetchall()
+        """))
+        tickets = tickets_result.fetchall()
+    
     else:
-        # Foundry admin: show tickets for their foundry only
-        # Fix: Use user_name instead of username in the query
-        result = db.session.execute(text("""
+        # Foundry admin: check for access
+        foundry_result = db.session.execute(text("""
             SELECT DISTINCT foundry_name 
             FROM foundries 
             WHERE LOWER(person_name) = LOWER(:username) AND is_admin = 1
         """), {'username': username}).fetchone()
 
-        # If not found by person_name, try with user_name
-        if not result:
-            result = db.session.execute(text("""
+        if not foundry_result:
+            foundry_result = db.session.execute(text("""
                 SELECT DISTINCT foundry_name 
                 FROM foundries 
                 WHERE LOWER(user_name) = LOWER(:username) AND is_admin = 1
             """), {'username': username}).fetchone()
 
-        # If the result is None or empty, deny access
-        if not result:
+        if not foundry_result:
             return f"Unauthorized: No admin rights found for username '{username}'", 403
 
-        foundry_name = result[0]
-        
-        # Query for tickets in the foundry
-        tickets = db.session.execute(text("""
+        foundry_name = foundry_result[0]
+
+        tickets_result = db.session.execute(text("""
             SELECT t.ticket_id, t.date_created, t.foundry_name, t.issue, t.issue_description, 
                    t.priority, t.status, t.resolved_time, t.attachment_file,
                    a.name AS assigned_to, a.email AS assigned_email
@@ -259,11 +256,15 @@ def dashboard():
             LEFT JOIN assign_to a ON t.assign_to = a.name
             WHERE t.foundry_name = :foundry_name
             ORDER BY COALESCE(t.resolved_time, t.date_created) DESC
-        """), {'foundry_name': foundry_name}).fetchall()
+        """), {'foundry_name': foundry_name})
+        tickets = tickets_result.fetchall()
 
-    # Return the dashboard template, passing foundry name and tickets
+    print(f"🔍 DEBUG - Tickets count: {len(tickets)}")
+
+    # ✅ Render the dashboard template
     return render_template("dashboard.html",
                            current_user={"username": username},
+                           username=username,
                            tickets=tickets,
                            foundry=foundry_name)
 
@@ -529,79 +530,56 @@ def get_foundries():
 
 @app.route('/supporthub/new_ticket')
 def new_ticket():
-    """
-    Render the Create Ticket form with appropriate options based on user role.
-    """
     try:
-        # Get URL parameters
-        foundry = request.args.get('foundry') or request.args.get('foundry_name')  # Accept both parameter names
-        username = request.args.get('user') or request.args.get('username')
-        
+        # ✅ Correct order: try 'username' first, then fallback to 'user'
+        username = request.args.get('username') or request.args.get('user')
+        foundry = request.args.get('foundry') or request.args.get('foundry_name')
+
+        print("🔍 DEBUG - username:", username)
+        print("🔍 DEBUG - foundry:", foundry)
+
         if not username:
-            return "Missing username parameter", 400
-            
+            return "Access Denied<br><br><b>No username provided.</b> Please login to access the Support Hub.", 400
+
         if not foundry:
             return "Foundry not specified", 400
 
-        # Query for available case types for the ticket
+        # ✅ Proceed normally...
         case_types = db.session.execute(text("SELECT id, name FROM case_types ORDER BY id")).fetchall()
-        
-        # Initialize user_info to None
         user_info = None
-        
-        # Check if user is super admin
         is_super_admin = "admin" in username.lower()
-        
-        # Get all foundries for dropdown (or just the selected one for foundry admin)
-        if is_super_admin and not foundry:
-            # Super admin without foundry selected - show all foundries
-            foundries = [row[0] for row in db.session.execute(
-                text("SELECT DISTINCT foundry_name FROM foundries ORDER BY foundry_name")
-            ).fetchall()]
-            
-            # Allow super admin to choose foundry (don't show specific user info yet)
-            return render_template('create_ticket.html',
-                                  foundries=foundries,
-                                  case_types=case_types,
-                                  user_info=None,
-                                  current_user={"username": username, "is_admin": True},
-                                  show_foundry_dropdown=True)
-        
-        # If we have a foundry (either because user is foundry admin or super admin selected one)
-        if foundry:
-            # Try to find user info (if a regular user is creating ticket)
-            if not is_super_admin:
-                person = db.session.execute(text("""
-                    SELECT person_name, email, phone FROM foundries 
-                    WHERE foundry_name = :foundry AND LOWER(person_name) = LOWER(:username)
-                """), {'foundry': foundry, 'username': username}).fetchone()
-                
-                if person:
-                    user_info = {
-                        'name': person[0],
-                        'email': person[1],
-                        'phone': person[2],
-                        'foundry': foundry
-                    }
-            
-            # Get all foundries for super admin, or just this one for foundry admin
-            foundries = [foundry] if not is_super_admin else [row[0] for row in db.session.execute(
-                text("SELECT DISTINCT foundry_name FROM foundries ORDER BY foundry_name")
-            ).fetchall()]
-            
-            return render_template('create_ticket.html',
-                                  foundries=foundries,
-                                  case_types=case_types,
-                                  user_info=user_info,
-                                  current_user={"username": username, "is_admin": is_super_admin},
-                                  show_foundry_dropdown=is_super_admin,
-                                  selected_foundry=foundry)
-        else:
-            return "Foundry not specified", 400
+
+        # Check user info for foundry
+        if not is_super_admin:
+            person = db.session.execute(text("""
+                SELECT person_name, email, phone FROM foundries 
+                WHERE foundry_name = :foundry AND LOWER(person_name) = LOWER(:username)
+            """), {'foundry': foundry, 'username': username}).fetchone()
+
+            if person:
+                user_info = {
+                    'name': person[0],
+                    'email': person[1],
+                    'phone': person[2],
+                    'foundry': foundry
+                }
+
+        # Foundries for dropdown
+        foundries = [foundry] if not is_super_admin else [row[0] for row in db.session.execute(
+            text("SELECT DISTINCT foundry_name FROM foundries ORDER BY foundry_name")
+        ).fetchall()]
+
+        return render_template('create_ticket.html',
+                               foundries=foundries,
+                               case_types=case_types,
+                               user_info=user_info,
+                               current_user={"username": username, "is_admin": is_super_admin},
+                               show_foundry_dropdown=is_super_admin,
+                               selected_foundry=foundry)
 
     except Exception as e:
-        # Handle unexpected errors gracefully
         return jsonify({'error': f'An error occurred: {str(e)}'}), 500
+
       
 @app.route('/supporthub/tickets')
 def tickets():
