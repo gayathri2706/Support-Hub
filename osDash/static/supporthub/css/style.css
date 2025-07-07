@@ -1,0 +1,528 @@
+/* Global Styles */
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    background-color:white;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main wrapper */
+.wrapper {
+    display: flex;  /* ✅ Corrected */
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+
+/* Sidebar Styling */
+.sidebar {
+    width: 220px;
+    background-color: #2c3e50;
+    color: white;
+    padding: 15px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Sidebar Links */
+.sidebar a {
+    color: #eff3f5;
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 5px;
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: 16px;
+}
+
+.sidebar a:hover {
+    background-color: #34495e;
+} */
+
+/* Main Content */
+.content {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    /* margin-left: 200px;
+    width: calc(100%-200px); */
+    padding: 15px;
+    margin-bottom: 10px !important;
+}
+
+/* Add a border line below the header */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 7px !important;
+    padding-top: 2px !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    border-bottom: 2px solid #ccc; /* Light grey border */
+}
+
+/* Style for the hr divider */
+.header-divider {
+    border: none;
+    height: 2px;
+    background-color: #ccc; /* Light grey color */
+    margin: 3px 0 !important; /* Reduces space between sections */
+}
+
+/* Improve Dashboard Button Styling */
+.header-container .btn-primary {
+    padding: 6px 12px !important;
+    font-size: 14px !important;
+    border-radius: 5px !important;
+    text-align: center;
+    background-color: #007bff; /* Consistent button color */
+    border: none !important;
+}
+
+.header-container .btn-primary:hover {
+    background-color: #0056b3 !important; /* Darker shade on hover */
+}
+
+/* Welcome Section (Aligned to Left) */
+.welcome-section {
+    background-color:white;
+    border-radius: 6px; /* Reduced border radius */
+    padding: 8px; /* Less padding */
+    text-align: left;
+    font-size: 14px; /* Smaller text */
+    width: 100%;
+    margin-top: -5px !important; /* Reduce the gap between header and welcome section */
+}
+
+.welcome-section h5 {
+    margin: 0 0 5px 0; /* Removes unnecessary spacing */
+    font-size: 16px; /* Smaller heading */
+}
+
+.welcome-section p {
+    margin: 0; /* Ensures text starts at the top */
+    font-size: 13px; /* Smaller text */
+    line-height: 1.4;
+}
+
+/* My Tickets */
+.my-tickets {
+    background-color: #ffffff;
+    padding: 10px; /* Reduced padding */
+    border-radius: 10px;
+    border: 1px solid black;
+    width: 100%;
+    font-size: 14px;
+    margin-top: 10px !important; /* Removes space above Contact Us */
+    margin-bottom: 10px !important; /* Removes space above Contact Us */
+}
+
+/* Filters Section (Side-by-Side with "Need Assistance") */
+.d-flex.align-items-center.justify-content-between {
+    margin-top: 0 !important; /* Remove unnecessary margin */
+    padding-top: 0 !important;
+    margin-bottom: 5px !important;
+    padding-bottom: 5px !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Ensuring Proper Widths */
+.form-select {
+    font-size: 14px;
+    padding: 6px;
+    width: auto; /* Adjusts based on content */
+}
+
+#foundryDetails {
+        margin-top: 20px;
+        width: 100%;
+        overflow-x: auto;
+    }
+
+/* Table Styles */
+.table-container {
+    min-height: 230px; /* Adjust the height based on row size */
+    overflow-x: auto;
+    margin-bottom: 0px !important; /* Remove margin at the bottom */
+    padding-bottom: 0px !important; /* Remove padding at the bottom */}
+
+.table {
+    width: 100%;
+    font-size: 14px;
+}
+
+.table th, .table td {
+    white-space: nowrap;
+    text-align: center;
+    vertical-align: middle !important;
+    padding: 5px !important;
+    font-size: 14px;
+}
+
+/* Ensure last page is structured with at least 5 rows */
+.fixed-height-table tbody tr {
+    min-height: 50px;
+    max-height: 50px;
+}
+
+/* Base Style */
+.priority-badge,.status-badge {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    padding: 5px 12px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center; /* Center text horizontally */
+}
+
+/* High Priority - Red */
+.priority-badge[data-priority="High"] {
+    color: #cc0000; /* Dark Red */
+    background-color: rgba(255, 0, 0, 0.2); /* Light Red */
+}
+
+/* Medium Priority - Blue */
+.priority-badge[data-priority="Medium"] {
+    color: #0044cc; /* Dark Blue */
+    background-color: rgba(0, 0, 255, 0.2); /* Light Blue */
+}
+
+/* Low Priority - Green */
+.priority-badge[data-priority="Low"] {
+    color: #008000; /* Dark Green */
+    background-color: rgba(0, 255, 0, 0.2); /* Light Green */
+}
+
+/* Status Colors */
+.status-badge[data-status="Open"] {
+    color: #008000; /* Dark Green */
+    background-color: rgba(0, 255, 0, 0.2); /* Light Green */
+}
+
+.status-badge[data-status="Closed"] {
+    color: #cc0000; /* Dark Red */
+    background-color: rgba(255, 0, 0, 0.2); /* Light Red */
+}
+
+/* Ensure the Status column aligns in the center */
+.status-column {
+    text-align: center;
+    vertical-align: middle !important;
+}
+
+/* Wrapper to hold the dropdown and keep it centered */
+.status-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Status Dropdown Base */
+.status-dropdown {
+    appearance: none;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    width: 85px; /* Adjust width */
+    height: 32px; /* Adjust height */
+    padding: 5px 0px; /* Center text properly */
+    border-radius: 10px; /* Fully rounded */
+    border: none !important; /* No outline */
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center text horizontally */
+}
+
+/* Open Status - Light Green */
+.status-dropdown[data-status="Open"] {
+    color: #008000; /* Dark Green */
+    background-color: rgba(0, 255, 0, 0.2); /* Very light green */
+}
+
+/* Closed Status - Light Red */
+.status-dropdown[data-status="Closed"] {
+    color: #cc0000; /* Dark Red */
+    background-color: rgba(255, 0, 0, 0.2); /* Very light red */
+}
+
+/* Remove Arrow for Closed Status */
+.status-dropdown[data-status="Closed"] {
+    background-image: none !important;
+    padding-right: 5px; /* Reduced padding */
+    justify-content: center; /* Ensure text is fully centered */
+}
+
+/* Custom dropdown arrow for Open status */
+.status-dropdown[data-status="Open"] {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23006600' d='M5 8l5 5 5-5H5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 12px;
+}
+
+
+/* Ensure equal height for all table rows */
+.table tbody tr {
+    height: 50px !important; /* Adjust as needed */
+}
+
+
+/* Ensure the ACTIONS column is centered */
+.actions-column {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Properly align buttons inside ACTIONS */
+.actions-column .d-flex {
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Ensure buttons do not stretch */
+.btn-sm {
+    padding: 5px 8px !important;
+    min-width: 35px;
+}
+
+/* Pagination Section */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0px !important;  /* Reduce spacing between table and pagination */
+    padding-top: 0px !important; /* Ensure pagination is closer */
+    margin-bottom: 0px !important; /* Ensure charts do not overlap pagination */
+    padding-bottom: 2px !important; /* Keeps spacing balanced */
+}
+
+
+/* Improve Pagination Button Spacing */
+.pagination-container button {
+    font-size: 14px;
+    padding: 6px 10px;
+    border-radius: 5px;
+    margin: 2px 5px; /* Reduce space between buttons */
+    border: none;
+}
+/* Comments Box Styling - No Scroll and Left Aligned */
+.comments-box {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    padding: 8px;
+    font-size: 14px;
+    text-align: left; /* Align comments to left */
+    width: 100%; /* Ensure full width */
+    overflow: hidden; /* Remove scroll */
+    white-space: normal; /* Ensure text wraps */
+}
+
+.comments-box p {
+    margin: 0;
+    color: #555;
+    word-break: break-word; /* Prevents text overflow */
+}
+
+/* Buttons */
+.btn {
+    font-size: 14px;
+    padding: 6px 10px;
+}
+
+/* Contact Us */
+.contact-us {
+    margin-top: 10px !important; /* Adjust gap */
+    margin-bottom: 0 !important;
+    background-color:white;
+    padding: 5px; /* Reduced padding */
+    height: 75px; /* Allow content to define height */
+    border-radius: 6px; /* Slightly reduced border radius */
+    border: 1px solid black;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+}
+
+.contact-us h4 {
+    margin: 0 0 5px 0; /* Removes extra spacing */
+    font-size: 16px; /* Smaller heading */
+}
+
+.contact-us p {
+    margin: 0; /* Ensures text starts from the top */
+    font-size: 14px; /* Smaller text */
+    line-height: 1.4;
+}
+
+/* Feedback Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+.feedback-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    z-index: 1000;
+    max-width: 500px;
+    width: 90%;
+}
+
+.feedback-modal h2 {
+    margin: 0 0 15px;
+}
+
+.feedback-modal label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.feedback-modal input,
+.feedback-modal select,
+.feedback-modal textarea {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.feedback-modal button {
+    padding: 10px 15px;
+    background: #565f68;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.feedback-modal button:hover {
+    background: #415265;
+}
+
+.toast-message {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.toast-message.error {
+    background-color: #dc3545;
+}
+
+.fade-out {
+    opacity: 0;
+}
+
+/* Center the form on the page */
+.form-container {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Labels beside the input fields */
+.form-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* Labels have fixed width */
+.form-label {
+    font-weight: bold;
+    width: 150px;
+    text-align: right;
+    margin-right: 10px;
+}
+
+/* Inputs and Select Fields */
+.equal-input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+/* Submit Button */
+#submitButton {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+#submitButton:hover {
+    background-color: #0056b3;
+}
+
+/* Charts */
+.chart-container {
+    margin-top: 0px !important; /* Ensure charts do not overlap pagination */
+    margin-bottom: 0px !important; /* Ensure charts do not overlap pagination */
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px; /* Reduce space between charts */
+}
+
+/* charts*/
+.col-md-6 {
+    flex: 0 0 49%; /* Ensures charts fit side by side */
+    max-width: 49%;
+}
+
+.col-md-6 div {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+ 
