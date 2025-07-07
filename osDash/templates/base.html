@@ -6,7 +6,7 @@
     <title>{% block title %}Support Hub{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}?v=1.0.3" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='images/support.png') }}" type="image/png">
 </head>
 <body>
@@ -37,7 +37,7 @@
             } else {
                 document.body.innerHTML = `
                     <div class="container mt-5">
-                        <div class="alert alert-danger">
+                        <div class="alert alert-danger"> 
                             <h4 class="alert-heading">Access Denied</h4>
                             <p>No username provided. Please login to access the Support Hub.</p>
                         </div>
