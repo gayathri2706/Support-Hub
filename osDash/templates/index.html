@@ -63,7 +63,8 @@
         </div>
 
         <!-- In your template file -->
-         <a href="#" id="openTicketButton" class="btn btn-danger" data-username="{{ current_user.username }}">Open Ticket</a>
+         <a id="openTicketBtn" href="#" class="btn btn-danger">Open Ticket</a>
+
         </div>
 
     <!-- Tickets Table -->
@@ -154,7 +155,7 @@
 
 <!-- Feedback Modal -->
 <div class="modal-overlay" onclick="closeFeedbackModal()"></div>
-<div class="feedback-modal rounded p-4 bg-light">
+<div class="feedback-modal rounded p-4 bg-light" style="display: none;">
     <h2 class="text-primary">Customer Feedback</h2>
     <form id="feedback-form" method="POST" action="/supporthub/send-feedback">
 
@@ -283,7 +284,7 @@
     updatePagination();
 
 
-document.getElementById('openTicketButton').addEventListener('click', () => {
+document.getElementById('openTicketBtn').addEventListener('click', () => {
     const selectedFoundry = document.getElementById('foundryFilter').value;
     const urlParams = new URLSearchParams(window.location.search);
     const currentUsername = urlParams.get('user');
