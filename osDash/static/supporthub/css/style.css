@@ -509,7 +509,7 @@ html, body {
     margin-bottom: 0px !important; /* Ensure charts do not overlap pagination */
     background-color: white;
     border-radius: 8px;
-    padding: 20px;
+    padding: 10px;
     display: flex;
     justify-content: space-between;
     gap: 10px; /* Reduce space between charts */
@@ -517,12 +517,13 @@ html, body {
 
 /* charts*/
 .col-md-6 {
-    flex: 0 0 49%; /* Ensures charts fit side by side */
-    max-width: 49%;
+    flex: 0 0 45%; /* Ensures charts fit side by side */
+    max-width: 45%;
 }
 
 .col-md-6 div {
     margin: 0 !important;
     padding: 0 !important;
 }
+ 
  
