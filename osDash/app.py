@@ -19,7 +19,10 @@ with open("config.json") as config_file:
 db_config = config["database"]
 
 
-app = Flask(__name__)
+app = Flask(__name__,
+            static_folder='static',
+            static_url_path='/supporthub/static',
+            template_folder='templates')
 
 # Configure the database connection
 app.config['SQLALCHEMY_DATABASE_URI'] = f"{db_config['driver']}://{db_config['username']}:{db_config['password']}@{db_config['host']}/{db_config['database']}"
