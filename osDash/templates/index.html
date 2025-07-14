@@ -33,8 +33,15 @@
 
 
 <!-- My Tickets Section -->
-<h4><strong>My Tickets</strong></h4>
-<div class="my-tickets bg-white p-4 rounded border border-dark">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <h4><strong>My Tickets</strong></h4>
+    
+    <!-- Back Button -->
+    <button onclick="window.location.href='https://sandman.co.in/user/dashboard'" 
+            class="btn btn-secondary">
+        ← Back to Sandman
+    </button>
+</div><div class="my-tickets bg-white p-4 rounded border border-dark">
     <!-- Filters & Open Ticket Button (Side-by-Side) -->
     <div class="d-flex align-items-center justify-content-between mb-3">
         <!-- Left Side - Filters -->
