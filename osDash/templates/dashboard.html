@@ -5,21 +5,21 @@
     {% endblock %}
 
     {% block content %}
-    <div class="header-container justify-content-between align-items-center">
-        <h3>Dashboard</h3>
-        <div class="d-flex align-items-center">
-            <div class="me-3">
-                <select id="statusFilter" class="form-select" style="width: 150px;">
-                    <option value="" selected>All</option>
-                    <option value="Open">Open</option>
-                    <option value="Closed">Closed</option>
-                </select>
-            </div>
-            <a href="/supporthub/new_ticket?foundry={{ foundry }}&username={{ username }}" class="btn btn-danger me-2">Open Ticket</a>
-            <a href="/supporthub/?user={{ current_user.username }}" class="btn btn-secondary">Back</a>
-
+    <div class="header-container d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Dashboard</h3>
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <select id="statusFilter" class="form-select" style="width: 150px;">
+                <option value="" selected>All</option>
+                <option value="Open">Open</option>
+                <option value="Closed">Closed</option>
+            </select>
         </div>
+        <a href="/supporthub/new_ticket?foundry={{ foundry }}&username={{ username }}" class="btn btn-danger me-2">Open Ticket</a>
+        <a class="btn btn-secondary" href="/supporthub/?user={{ current_user.username }}">Back</a>
     </div>
+</div>
+
 
     <div class="table-container">
         <table class="table table-striped border">
@@ -146,15 +146,16 @@
 
     <div class="chart-container">
         <div class="col-md-6">
-            <div id="caseTypeChart" style="height: 320px;"></div>
+            <div id="caseTypeChart" style="height: 330px;"></div>
         </div>
         <div class="col-md-6">
-            <div id="priorityChart" style="height: 280px;"></div>
+            <div id="priorityChart" style="height: 330px;"></div>
         </div>
     </div>
 
     <script src="https://code.highcharts.com/highcharts.js"></script>
-    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+<script src="https://code.highcharts.com/modules/treemap.js"></script>
+<script src="https://code.highcharts.com/modules/accessibility.js"></script>
 
     <script>
     let currentAssignTicketId = null;
@@ -293,81 +294,13 @@
         });
     }
 
-    async function fetchChartData() {
-        try {
-            const rawFoundry = "{{ foundry }}";
-            const foundryName = rawFoundry.toLowerCase() === "admin" ? "all" : rawFoundry;
-            const response = await fetch(`/supporthub/api/chart-data?foundry_name=${encodeURIComponent(foundryName)}`);
-            const data = await response.json();
+   document.addEventListener('DOMContentLoaded', function () {
+    fetchChartData();
+    applyFilters();
 
-            renderCaseTypeChart(data.case_types);
-            renderPriorityChart(data.priority);
-        } catch (error) {
-            console.error('Error fetching chart data:', error);
-        }
-    }
+    document.getElementById("statusFilter").addEventListener("change", applyFilters);
 
-    function renderCaseTypeChart(data) {
-        Highcharts.chart('caseTypeChart', {
-            chart: { type: 'pie' },
-            title: { text: 'Case Type Distribution' },
-            credits: { enabled: false },
-            series: [{ name: 'Cases', data }]
-        });
-    }
-
-    function renderPriorityChart(data) {
-        Highcharts.chart('priorityChart', {
-            chart: { type: 'pie' },
-            title: { text: 'Priority Distribution' },
-            credits: { enabled: false },
-            series: [{ name: 'Tickets', data }]
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        fetchChartData();
-        applyFilters();
-        document.getElementById("statusFilter").addEventListener("change", applyFilters);
-    });
-
-    const rowsPerPage = 4;
-    let currentPage = 1;
-    let totalRows = 0;
-
-    function applyFilters() {
-        const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
-        const rows = document.querySelectorAll('#ticketsTable tr');
-        totalRows = 0;
-
-        rows.forEach(row => {
-            const status = row.getAttribute("data-status").toLowerCase();
-            const visible = !statusFilter || status === statusFilter;
-            row.setAttribute("data-visible", visible);
-            if (visible) totalRows++;
-        });
-
-        currentPage = 1;
-        updatePagination();
-    }
-
-    function updatePagination() {
-        const rows = document.querySelectorAll('#ticketsTable tr');
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
-        let visibleIndex = 0;
-
-        rows.forEach(row => {
-            if (row.getAttribute("data-visible") === "true") {
-                row.style.display = visibleIndex >= (currentPage - 1) * rowsPerPage && visibleIndex < currentPage * rowsPerPage ? "" : "none";
-                visibleIndex++;
-            } else {
-                row.style.display = "none";
-            }
-        });
-
-        document.getElementById('paginationInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
-    }
-
+    // Pagination
     document.getElementById('firstPage').addEventListener('click', () => { currentPage = 1; updatePagination(); });
     document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) currentPage--; updatePagination(); });
     document.getElementById('nextPage').addEventListener('click', () => {
@@ -380,22 +313,374 @@
         updatePagination();
     });
 
-    document.getElementById('openTicketButton').addEventListener('click', () => {
-    const foundry = "{{ foundry }}";
-    const username = "{{ username or current_user.username }}";
+    // Open Ticket Button
+    const openTicketBtn = document.getElementById('openTicketButton');
+    if (openTicketBtn) {
+        openTicketBtn.addEventListener('click', () => {
+            const foundry = "{{ foundry }}";
+            const username = "{{ username or current_user.username }}";
 
+            if (!username) {
+                alert("Username missing");
+                return;
+            }
 
-    if (!username) {
-        alert("Username missing");
-        return;
+            const url = foundry === "All"
+                ? `/supporthub/new_ticket?username=${encodeURIComponent(username)}`
+                : `/supporthub/new_ticket?foundry=${encodeURIComponent(foundry)}&username=${encodeURIComponent(username)}`;
+
+            window.location.href = url;
+        });
     }
-
-    const url = foundry === "All"
-        ? `/supporthub/new_ticket?username=${encodeURIComponent(username)}`
-        : `/supporthub/new_ticket?foundry=${encodeURIComponent(foundry)}&username=${encodeURIComponent(username)}`;
-
-    window.location.href = url;
 });
 
+async function fetchChartData() {
+    try {
+        const rawFoundry = "{{ foundry }}";
+        const foundryName = rawFoundry.toLowerCase() === "admin" ? "all" : rawFoundry;
+        const response = await fetch(`/supporthub/api/chart-data?foundry_name=${encodeURIComponent(foundryName)}`);
+        const data = await response.json();
+
+        renderCaseTypeChart(data.case_types);
+        renderPriorityChart(data.priority);
+    } catch (error) {
+        console.error('Error fetching chart data:', error);
+    }
+}
+
+
+function renderCaseTypeChart(data) {
+    // Convert data to treemap format
+    const treeMapData = data.map(item => {
+        if (Array.isArray(item)) {
+            return {
+                name: item[0],
+                value: item[1],
+                colorValue: item[1]
+            };
+        } else if (typeof item === 'object' && item.name) {
+            return {
+                name: item.name,
+                value: item.y || item.value,
+                colorValue: item.y || item.value
+            };
+        } else {
+            return {
+                name: 'Unknown',
+                value: 0,
+                colorValue: 0
+            };
+        }
+    });
+
+    // Sort data by value for better color distribution
+    treeMapData.sort((a, b) => b.value - a.value);
+
+    // Modern color palette - each case type gets a distinct color
+    const modernColors = [
+        '#2E7D32', // Forest Green
+        '#388E3C', // Medium Green
+        '#43A047', // Light Green
+        '#66BB6A', // Soft Green
+        '#81C784', // Pale Green
+        '#A5D6A7', // Very Light Green
+        '#C8E6C9', // Mint Green
+        '#E8F5E8'  // Very Pale Green
+    ];
+
+    Highcharts.chart('caseTypeChart', {
+        chart: { 
+            type: 'treemap',
+            height: 330,
+            backgroundColor: '#FAFAFA'
+        },
+        title: { 
+            text: 'Case Type Distribution',
+            style: {
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: 'balck'
+            }
+        },
+        credits: { enabled: false },
+        tooltip: {
+            pointFormat: '<b>{point.name}</b><br>Count: {point.value}<br>Percentage: {point.percentage:.1f}%',
+            backgroundColor: '#FFFFFF',
+            borderColor: '#2E7D32',
+            borderRadius: 8,
+            shadow: true
+        },
+        plotOptions: {
+            treemap: {
+                layoutAlgorithm: 'squarified',
+                borderWidth: 3,
+                borderColor: '#FFFFFF',
+                borderRadius: 4,
+                dataLabels: {
+                    enabled: true,
+                    format: '{point.name}<br><b>{point.value}</b>',
+                    style: {
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        color: '#FFFFFF',
+                        textOutline: '0px #000000'
+                    }
+                },
+                states: {
+                    hover: {
+                        brightness: 0.2,
+                        borderColor: '#2E7D32',
+                        borderWidth: 4
+                    }
+                }
+            }
+        },
+        series: [{
+            name: 'Cases',
+            data: treeMapData.map((item, index) => {
+                const totalValue = treeMapData.reduce((sum, d) => sum + d.value, 0);
+                return {
+                    ...item,
+                    percentage: totalValue > 0 ? (item.value / totalValue * 100) : 0,
+                    color: modernColors[index % modernColors.length]
+                };
+            })
+        }]
+    });
+}
+
+function renderPriorityChart(data) {
+    // Convert data to treemap format
+    const treeMapData = data.map(item => {
+        if (Array.isArray(item)) {
+            return {
+                name: item[0],
+                value: item[1],
+                colorValue: item[1]
+            };
+        } else if (typeof item === 'object' && item.name) {
+            return {
+                name: item.name,
+                value: item.y || item.value,
+                colorValue: item.y || item.value
+            };
+        } else {
+            return {
+                name: 'Unknown',
+                value: 0,
+                colorValue: 0
+            };
+        }
+    });
+
+    // Neutral pink/rose color palette from your image
+   const priorityColors = {
+    'High': '#ff7b7b',     // Dark red for high priority
+    'Medium': '#ff5252',   // Medium red for medium priority     
+    'Low': '#ffbaba'       // Light red for low priority
+};
+
+    Highcharts.chart('priorityChart', {
+        chart: { 
+            type: 'treemap',
+            height: 330,
+            backgroundColor: 'transparent',
+            spacing: [5, 5, 5, 5]
+        },
+        title: { 
+            text: 'Priority Distribution',
+            align: 'center',
+            style: {
+                fontSize: '16px',
+                fontWeight: '600',
+                color: 'black',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
+            }
+        },
+        credits: { enabled: false },
+        tooltip: {
+            useHTML: true,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderColor: '#E0E0E0',
+            borderRadius: 8,
+            borderWidth: 1,
+            shadow: {
+                color: 'rgba(0, 0, 0, 0.1)',
+                width: 4,
+                offsetX: 2,
+                offsetY: 2
+            },
+            style: {
+                fontSize: '13px',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
+            },
+            formatter: function() {
+                return `<div style="padding: 8px;">
+                    <strong style="color: #8B4A47; font-size: 14px;">${this.point.name} Priority</strong><br>
+                    <span style="color: #666;">Count: <strong>${this.point.value}</strong></span><br>
+                    <span style="color: #666;">Percentage: <strong>${this.point.percentage.toFixed(1)}%</strong></span>
+                </div>`;
+            }
+        },
+        plotOptions: {
+            treemap: {
+                layoutAlgorithm: 'squarified',
+                borderWidth: 2,
+                borderColor: '#FFFFFF',
+                borderRadius: 6,
+                dataLabels: {
+                    enabled: true,
+                    useHTML: true,
+                    formatter: function() {
+                        // Always show labels since priority chart typically has fewer, larger sections
+                        return `<div style="text-align: center; line-height: 1.1;">
+                            <div style="font-weight: 600; font-size: 11px; color: #5D3833; text-shadow: 1px 1px 2px rgba(255,255,255,0.3);">
+                                ${this.point.name}
+                            </div>
+                            <div style="font-weight: 700; font-size: 14px; color: #5D3833; text-shadow: 1px 1px 2px rgba(255,255,255,0.3);">
+                                ${this.point.value}
+                            </div>
+                        </div>`;
+                    }
+                },
+                states: {
+                    hover: {
+                        brightness: 0.15,
+                        borderColor: '#333333',
+                        borderWidth: 3
+                    }
+                },
+                animation: {
+                    duration: 800
+                }
+            }
+        },
+        series: [{
+            name: 'Tickets',
+            data: treeMapData.map((item) => {
+                const totalValue = treeMapData.reduce((sum, d) => sum + d.value, 0);
+                return {
+                    ...item,
+                    percentage: totalValue > 0 ? (item.value / totalValue * 100) : 0,
+                    color: priorityColors[item.name] || '#D4A5A0'
+                };
+            })
+        }]
+    });
+}
+
+// Alternative function for gradient-based coloring by value
+function renderCaseTypeChartWithGradient(data) {
+    const treeMapData = data.map(item => {
+        if (Array.isArray(item)) {
+            return {
+                name: item[0],
+                value: item[1],
+                colorValue: item[1]
+            };
+        } else if (typeof item === 'object' && item.name) {
+            return {
+                name: item.name,
+                value: item.y || item.value,
+                colorValue: item.y || item.value
+            };
+        } else {
+            return {
+                name: 'Unknown',
+                value: 0,
+                colorValue: 0
+            };
+        }
+    });
+
+    Highcharts.chart('caseTypeChart', {
+        chart: { 
+            type: 'treemap',
+            height: 330,
+            backgroundColor: '#FAFAFA'
+        },
+        title: { 
+            text: 'Case Type Distribution',
+            style: {
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#2E7D32'
+            }
+        },
+        credits: { enabled: false },
+        colorAxis: {
+            minColor: '#E8F5E8',
+            maxColor: '#1B5E20',
+            type: 'logarithmic'
+        },
+        tooltip: {
+            pointFormat: '<b>{point.name}</b><br>Count: {point.value}<br>Percentage: {point.percentage:.1f}%',
+            backgroundColor: '#FFFFFF',
+            borderColor: '#2E7D32',
+            borderRadius: 8,
+            shadow: true
+        },
+        plotOptions: {
+            treemap: {
+                layoutAlgorithm: 'squarified',
+                borderWidth: 3,
+                borderColor: '#FFFFFF',
+                borderRadius: 4,
+                dataLabels: {
+                    enabled: true,
+                    format: '{point.name}<br><b>{point.value}</b>',
+                    style: {
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        color: '#FFFFFF',
+                        textOutline: '2px #000000'
+                    }
+                }
+            }
+        },
+        series: [{
+            name: 'Cases',
+            data: treeMapData.map((item) => {
+                const totalValue = treeMapData.reduce((sum, d) => sum + d.value, 0);
+                return {
+                    ...item,
+                    percentage: totalValue > 0 ? (item.value / totalValue * 100) : 0
+                };
+            })
+        }]
+    });
+}
+const rowsPerPage = 4;
+let currentPage = 1;
+let totalRows = 0;
+
+function applyFilters() {
+    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+    const rows = document.querySelectorAll('#ticketsTable tr');
+    totalRows = 0;
+    rows.forEach(row => {
+        const status = row.getAttribute("data-status").toLowerCase();
+        const visible = !statusFilter || status === statusFilter;
+        row.setAttribute("data-visible", visible);
+        if (visible) totalRows++;
+    });
+    currentPage = 1;
+    updatePagination();
+}
+
+function updatePagination() {
+    const rows = document.querySelectorAll('#ticketsTable tr');
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+    let visibleIndex = 0;
+    rows.forEach(row => {
+        if (row.getAttribute("data-visible") === "true") {
+            row.style.display = (visibleIndex >= (currentPage - 1) * rowsPerPage && visibleIndex < currentPage * rowsPerPage) ? "" : "none";
+            visibleIndex++;
+        } else {
+            row.style.display = "none";
+        }
+    });
+    document.getElementById('paginationInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+}
     </script>
     {% endblock %}
