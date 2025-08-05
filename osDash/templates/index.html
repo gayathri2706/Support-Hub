@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="header-container justify-content-between align-items-center mb-4">
+<div class="header-container d-flex justify-content-between align-items-center mb-4">
     <div class="d-flex align-items-center gap-2">
         <h4 class="mb-0"><strong>Support Hub</strong></h4>
         {% if current_user.username == "admin" %}
@@ -16,11 +16,16 @@
             </a>
         {% endif %}
     </div>
-    {% if current_user and current_user.is_admin %}
-        <a href="/supporthub/dashboard?user={{ current_user.username }}" class="btn btn-primary">Dashboard</a>
-    {% endif %}
 
+       <!-- Back to Sandman Button  -->
+<div class="text-center mt-3">
+    <button onclick="window.location.href='https://sandman.co.in/user/dashboard'" 
+            style="background-color: #2a5888; color: white; border:none; padding: 8px 20px; border-radius: 4x; cursor:pointer;">
+         Back to Sandman
+    </button>
 </div>
+</div>
+
 
 <!-- Line Separator -->
 <hr class="header-divider">
@@ -29,19 +34,15 @@
 <div class="welcome-section">
     <h5 class="text-dark">Hello User, how can we help you?</h5>
     <p><em>Your one-stop solution for all your needs. Find answers, troubleshoot issues, and explore guides.</em></p>
-</div>
 
+</div>
 
 <!-- My Tickets Section -->
 <div style="display: flex; justify-content: space-between; align-items: center;">
     <h4><strong>My Tickets</strong></h4>
-    
-    <!-- Back Button -->
-    <button onclick="window.location.href='https://sandman.co.in/user/dashboard'" 
-            class="btn btn-secondary">
-        ← Back to Sandman
-    </button>
-</div><div class="my-tickets bg-white p-4 rounded border border-dark">
+</div>
+
+<div class="my-tickets bg-white p-4 rounded border border-dark">
     <!-- Filters & Open Ticket Button (Side-by-Side) -->
     <div class="d-flex align-items-center justify-content-between mb-3">
         <!-- Left Side - Filters -->
@@ -69,10 +70,17 @@
             <small class="text-muted"><em>Fill the form here, we will get back to you within 24 hours.</em></small>
         </div>
 
-        <!-- In your template file -->
-         <a id="openTicketBtn" href="#" class="btn btn-danger">Open Ticket</a>
+       <div> {% if current_user and current_user.is_admin %} <a href="/supporthub/dashboard" class="btn btn-primary" style="margin-left: 15px;"> <svg style="width: 18px; height: 18px; margin-right: 8px; fill: currentColor;" viewBox="0 0 24 24"> <path d="M2 22V4h4v18H2zm6-10v10h4V12H8zm6-6v16h4V6h-4zm6-4v20h4V2h-4z"/> <path d="M16 2l6 6m0-6v6h-6" stroke="currentColor" stroke-width="1.5" fill="none"/> </svg> Dashboard </a> {% endif %} </div> 
 
-        </div>
+       <!-- In your template file -->
+<a id="openTicketBtn" href="#" class="btn btn-danger">
+    <svg style="width: 18px; height: 18px; margin-right: 8px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24">
+        <path d="m3 3 3 9-3 9 19-9Z"/>
+        <path d="m6 12 13 0"/>
+    </svg>
+    Open Ticket
+</a>
+</div>
 
     <!-- Tickets Table -->
     <div class="table-container">
@@ -114,7 +122,7 @@
                             <!-- Show Comments Button -->
                             <button class="btn btn-sm btn-outline-dark"
                                     onclick="toggleComments('{{ ticket.ticket_id }}')" 
-                                    {% if ticket.status != 'Closed' %}disabled{% endif %}>
+                                     {% if ticket.status != 'Closed' %}disabled{% endif %}>
                                 <i class="bi bi-chat-dots-fill" title="Comments"></i>
                             </button>
                     
@@ -122,7 +130,7 @@
                             {% if ticket.resolved_file %}
                                 <!-- Download Resolved File -->
                                 <a href="/supporthub/api/tickets/{{ ticket.ticket_id }}/file" download class="btn btn-sm btn-outline-success">
-                                    <i class="bi bi-download" title="Download Resolved File"></i>
+                                    <i class="bi bi-download" title="Download Resolved File"></i>  
                                 </a>
                             {% endif %}
 
@@ -159,6 +167,7 @@
         </p>
     </div>
 </div>
+
 
 <!-- Feedback Modal -->
 <div class="modal-overlay" onclick="closeFeedbackModal()"></div>
@@ -474,7 +483,7 @@ document.getElementById('openTicketBtn').addEventListener('click', () => {
     "Shreeraj": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("Shreeraj"),
     "Vishal": "http://127.0.0.1:5000/index?foundry=" + encodeURIComponent("Vishal")
 };
-
+xxx 
 // Redirect to the respective foundry home page
 if (foundry in foundryHomePages) {
     window.location.href = foundryHomePages[foundry];
