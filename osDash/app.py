@@ -21,6 +21,7 @@ db_config = config["database"]
 
 app = Flask(__name__,
             static_folder='static',
+            static_url_path='/supporthub/static',
             template_folder='templates')
 
 # Configure the database connection
@@ -1311,3 +1312,4 @@ def get_case_types():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
