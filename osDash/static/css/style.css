@@ -527,4 +527,26 @@ html, body {
     margin: 0 !important;
     padding: 0 !important;
 }
- 
+
+/* Description column specific styles */
+.description-cell {
+    max-width: 200px;
+    white-space: normal !important; /* Override the nowrap */
+    word-wrap: break-word;
+    text-align: left !important; /* Better for reading long text */
+}
+
+/* For truncated text with "See more" functionality */
+.description-content {
+    max-width: 200px;
+}
+
+.see-more-btn {
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.see-more-btn:hover {
+    text-decoration: underline;
+}
