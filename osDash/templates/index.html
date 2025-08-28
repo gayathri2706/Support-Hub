@@ -99,18 +99,34 @@
                 </tr>
             </thead>
             <tbody id="ticketsTable">
-                {% for ticket in tickets %}
-                <tr data-ticket-id="{{ ticket.ticket_id }}" data-foundry="{{ ticket.foundry_name }}" data-status="{{ ticket.status }}">
-                    <td>{{ ticket.ticket_id }}</td>
-                    <td>{{ ticket.date_created.strftime('%Y-%m-%d') }}</td>
-                    <td>{{ ticket.foundry_name }}</td>
-                    <td>{{ ticket.issue }}</td>
-                    <td>{{ ticket.issue_description }}</td>
-                    <td class="priority-column">
-                        <span id="priority-{{ ticket.ticket_id }}" class="priority-badge" data-priority="{{ ticket.priority }}">
-                            {{ ticket.priority }}
-                        </span>
-                    </td>
+    {% for ticket in tickets %}
+    <tr data-ticket-id="{{ ticket.ticket_id }}" data-foundry="{{ ticket.foundry_name }}" data-status="{{ ticket.status }}">
+        <td>{{ ticket.ticket_id }}</td>
+        <td>{{ ticket.date_created.strftime('%Y-%m-%d') }}</td>
+        <td>{{ ticket.foundry_name }}</td>
+        <td>{{ ticket.issue }}</td>
+        <td class="description-cell">
+            <div class="description-content" data-full-text="{{ ticket.issue_description or '' }}">
+                <span class="description-text">
+                    {% if ticket.issue_description and ticket.issue_description|length > 60 %}
+                        {{ ticket.issue_description[:60] }}...
+                        <a href="#" class="see-more-btn text-primary" onclick="toggleDescription(this, event)">See more</a>
+                    {% else %}
+                        {{ ticket.issue_description or 'No description available' }}
+                    {% endif %}
+                </span>
+            </div>
+        </td>
+        <td class="priority-column">
+            <span id="priority-{{ ticket.ticket_id }}" class="priority-badge" data-priority="{{ ticket.priority }}">
+                {{ ticket.priority }}
+            </span>
+        </td>
+        <td class="priority-column">
+            <span id="priority-{{ ticket.ticket_id }}" class="priority-badge" data-priority="{{ ticket.priority }}">
+                {{ ticket.priority }}
+            </span>
+        </td>
                     <td class="status-column">
                         <span id="status-{{ ticket.ticket_id }}" class="status-badge" data-status="{{ ticket.status }}">
                             {{ ticket.status }}
@@ -490,6 +506,21 @@ if (foundry in foundryHomePages) {
 } else {
     alert("Foundry home page not found!");
 }
+}
+
+function toggleDescription(element, event) {
+    event.preventDefault();
+    
+    const descriptionContent = element.closest('.description-content');
+    const fullText = descriptionContent.getAttribute('data-full-text');
+    const descriptionText = descriptionContent.querySelector('.description-text');
+    
+    if (element.textContent === 'See more') {
+        descriptionText.innerHTML = fullText + ' <a href="#" class="see-more-btn text-primary" onclick="toggleDescription(this, event)">See less</a>';
+    } else {
+        const truncatedText = fullText.length > 60 ? fullText.substring(0, 60) + '...' : fullText;
+        descriptionText.innerHTML = truncatedText + (fullText.length > 60 ? ' <a href="#" class="see-more-btn text-primary" onclick="toggleDescription(this, event)">See more</a>' : '');
+    }
 }
 
 </script>
