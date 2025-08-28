@@ -37,19 +37,30 @@
                     <th><strong>Assigned To</strong></th>
                 </tr>
             </thead>
-            <tbody id="ticketsTable">
-                {% for ticket in tickets %}
-                <tr id="row-{{ ticket.ticket_id }}" data-status="{{ ticket.status }}">
-                    <td>{{ ticket.ticket_id }}</td>
-                    <td>{{ ticket.date_created }}</td>
-                    <td>{{ ticket.foundry_name }}</td>
-                    <td>{{ ticket.issue }}</td>
-                    <td>{{ ticket.issue_description }}</td>
-                    <td class="priority-column">
-                        <span id="priority-{{ ticket.ticket_id }}" class="priority-badge" data-priority="{{ ticket.priority }}">
-                            {{ ticket.priority }}
-                        </span>
-                    </td>
+           <tbody id="ticketsTable">
+    {% for ticket in tickets %}
+    <tr id="row-{{ ticket.ticket_id }}" data-status="{{ ticket.status }}">
+        <td>{{ ticket.ticket_id }}</td>
+        <td>{{ ticket.date_created }}</td>
+        <td>{{ ticket.foundry_name }}</td>
+        <td>{{ ticket.issue }}</td>
+        <td class="description-cell">
+            <div class="description-content" data-full-text="{{ ticket.issue_description or '' }}">
+                <span class="description-text">
+                    {% if ticket.issue_description and ticket.issue_description|length > 60 %}
+                        {{ ticket.issue_description[:60] }}...
+                        <a href="#" class="see-more-btn text-primary" onclick="toggleDescription(this, event)">See more</a>
+                    {% else %}
+                        {{ ticket.issue_description or 'No description available' }}
+                    {% endif %}
+                </span>
+            </div>
+        </td>
+        <td class="priority-column">
+            <span id="priority-{{ ticket.ticket_id }}" class="priority-badge" data-priority="{{ ticket.priority }}">
+                {{ ticket.priority }}
+            </span>
+        </td>
                     <td class="status-column">
                         <div class="status-wrapper">
                             <select class="form-select status-dropdown" id="status-{{ ticket.ticket_id }}"
@@ -373,20 +384,51 @@ function renderCaseTypeChart(data) {
         }
     });
 
-    // Sort data by value for better color distribution
+    // Sort data by value for better visualization
     treeMapData.sort((a, b) => b.value - a.value);
 
-    // Modern color palette - each case type gets a distinct color
-    const modernColors = [
-        '#2E7D32', // Forest Green
-        '#388E3C', // Medium Green
-        '#43A047', // Light Green
-        '#66BB6A', // Soft Green
-        '#81C784', // Pale Green
-        '#A5D6A7', // Very Light Green
-        '#C8E6C9', // Mint Green
-        '#E8F5E8'  // Very Pale Green
-    ];
+    // Calculate min, max, and range for dynamic color scaling
+    const values = treeMapData.map(item => item.value).filter(v => v > 0);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const range = maxValue - minValue;
+
+    // Enhanced function to generate color based on value with better contrast
+    function getColorByValue(value) {
+        if (range === 0) return '#4CAF50'; // Default green if all values are same
+        
+        // Normalize value to 0-1 scale
+        const normalized = (value - minValue) / range;
+        
+        // Enhanced green color palette with better contrast
+        // Light green for low values, very dark green for high values
+        const lightGreen = { r: 165, g: 214, b: 167 };  // #A5D6A7 - Light green
+        const mediumGreen = { r: 76, g: 175, b: 80 };   // #4CAF50 - Medium green  
+        const darkGreen = { r: 27, g: 94, b: 32 };      // #1B5E20 - Dark green
+        
+        let targetColor;
+        let adjustedNormalized;
+        
+        if (normalized <= 0.5) {
+            // Interpolate between light and medium green (0-0.5)
+            adjustedNormalized = normalized * 2; // Scale to 0-1
+            targetColor = {
+                r: Math.round(lightGreen.r + (mediumGreen.r - lightGreen.r) * adjustedNormalized),
+                g: Math.round(lightGreen.g + (mediumGreen.g - lightGreen.g) * adjustedNormalized),
+                b: Math.round(lightGreen.b + (mediumGreen.b - lightGreen.b) * adjustedNormalized)
+            };
+        } else {
+            // Interpolate between medium and dark green (0.5-1)
+            adjustedNormalized = (normalized - 0.5) * 2; // Scale to 0-1
+            targetColor = {
+                r: Math.round(mediumGreen.r + (darkGreen.r - mediumGreen.r) * adjustedNormalized),
+                g: Math.round(mediumGreen.g + (darkGreen.g - mediumGreen.g) * adjustedNormalized),
+                b: Math.round(mediumGreen.b + (darkGreen.b - mediumGreen.b) * adjustedNormalized)
+            };
+        }
+        
+        return `rgb(${targetColor.r}, ${targetColor.g}, ${targetColor.b})`;
+    }
 
     Highcharts.chart('caseTypeChart', {
         chart: { 
@@ -399,7 +441,6 @@ function renderCaseTypeChart(data) {
             style: {
                 fontSize: '16px',
                 fontWeight: 'bold',
-                color: 'balck'
             }
         },
         credits: { enabled: false },
@@ -418,13 +459,25 @@ function renderCaseTypeChart(data) {
                 borderRadius: 4,
                 dataLabels: {
                     enabled: true,
-                    format: '{point.name}<br><b>{point.value}</b>',
+                    useHTML: false,
+                    formatter: function() {
+                        const totalValue = this.series.data.reduce((sum, point) => sum + point.value, 0);
+                        const percentage = (this.point.value / totalValue * 100);
+                        
+                        // For very small sections (less than 8% of total), put text beside number
+                        if (percentage < 8) {
+                            return `${this.point.name} ${this.point.value}`;
+                        } else {
+                            return `${this.point.name}<br><b>${this.point.value}</b>`;
+                        }
+                    },
                     style: {
-                        fontSize: '11px',
+                        fontSize: '10px',
                         fontWeight: 'bold',
-                        color: '#FFFFFF',
-                        textOutline: '0px #000000'
-                    }
+                        color: 'contrast',
+                    },
+                    verticalAlign: 'middle',
+                    align: 'center'
                 },
                 states: {
                     hover: {
@@ -437,12 +490,12 @@ function renderCaseTypeChart(data) {
         },
         series: [{
             name: 'Cases',
-            data: treeMapData.map((item, index) => {
+            data: treeMapData.map((item) => {
                 const totalValue = treeMapData.reduce((sum, d) => sum + d.value, 0);
                 return {
                     ...item,
                     percentage: totalValue > 0 ? (item.value / totalValue * 100) : 0,
-                    color: modernColors[index % modernColors.length]
+                    color: getColorByValue(item.value)
                 };
             })
         }]
@@ -473,12 +526,30 @@ function renderPriorityChart(data) {
         }
     });
 
-    // Neutral pink/rose color palette from your image
-   const priorityColors = {
-    'High': '#ff7b7b',     // Dark red for high priority
-    'Medium': '#ff5252',   // Medium red for medium priority     
-    'Low': '#ffbaba'       // Light red for low priority
-};
+    // Calculate min, max, and range for dynamic color scaling
+    const values = treeMapData.map(item => item.value).filter(v => v > 0);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const range = maxValue - minValue;
+
+    // Function to generate color based on value (red palette)
+    function getColorByValue(value) {
+        if (range === 0) return '#ff7b7b'; // Default red if all values are same
+        
+        // Normalize value to 0-1 scale
+        const normalized = (value - minValue) / range;
+        
+        // Red color palette from light to dark
+        const lightRed = { r: 255, g: 205, b: 205 }; // #FFCDCD
+        const darkRed = { r: 183, g: 28, b: 28 };     // #B71C1C
+        
+        // Interpolate between light and dark red
+        const r = Math.round(lightRed.r + (darkRed.r - lightRed.r) * normalized);
+        const g = Math.round(lightRed.g + (darkRed.g - lightRed.g) * normalized);
+        const b = Math.round(lightRed.b + (darkRed.b - lightRed.b) * normalized);
+        
+        return `rgb(${r}, ${g}, ${b})`;
+    }
 
     Highcharts.chart('priorityChart', {
         chart: { 
@@ -532,7 +603,6 @@ function renderPriorityChart(data) {
                     enabled: true,
                     useHTML: true,
                     formatter: function() {
-                        // Always show labels since priority chart typically has fewer, larger sections
                         return `<div style="text-align: center; line-height: 1.1;">
                             <div style="font-weight: 600; font-size: 11px; color: #5D3833; text-shadow: 1px 1px 2px rgba(255,255,255,0.3);">
                                 ${this.point.name}
@@ -562,15 +632,15 @@ function renderPriorityChart(data) {
                 return {
                     ...item,
                     percentage: totalValue > 0 ? (item.value / totalValue * 100) : 0,
-                    color: priorityColors[item.name] || '#D4A5A0'
+                    color: getColorByValue(item.value)
                 };
             })
         }]
     });
 }
 
-// Alternative function for gradient-based coloring by value
-function renderCaseTypeChartWithGradient(data) {
+function renderPriorityChart(data) {
+    // Convert data to treemap format
     const treeMapData = data.map(item => {
         if (Array.isArray(item)) {
             return {
@@ -593,63 +663,104 @@ function renderCaseTypeChartWithGradient(data) {
         }
     });
 
-    Highcharts.chart('caseTypeChart', {
-        chart: { 
+    // Define color palette: High (dark), Medium (medium), Low (light)
+    const priorityColors = {
+        'High': '#ff5252',   // Dark red
+        'Medium': '#ff7b7b', // Medium red
+        'Low': '#ffbaba'     // Light red
+    };
+
+    // Create chart
+    Highcharts.chart('priorityChart', {
+        chart: {
             type: 'treemap',
             height: 330,
-            backgroundColor: '#FAFAFA'
+            backgroundColor: 'transparent',
+            spacing: [5, 5, 5, 5]
         },
-        title: { 
-            text: 'Case Type Distribution',
+        title: {
+            text: 'Priority Distribution',
+            align: 'center',
             style: {
                 fontSize: '16px',
                 fontWeight: 'bold',
-                color: '#2E7D32'
+                color: 'black',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
             }
         },
         credits: { enabled: false },
-        colorAxis: {
-            minColor: '#E8F5E8',
-            maxColor: '#1B5E20',
-            type: 'logarithmic'
-        },
         tooltip: {
-            pointFormat: '<b>{point.name}</b><br>Count: {point.value}<br>Percentage: {point.percentage:.1f}%',
-            backgroundColor: '#FFFFFF',
-            borderColor: '#2E7D32',
+            useHTML: true,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderColor: '#E0E0E0',
             borderRadius: 8,
-            shadow: true
+            borderWidth: 1,
+            shadow: {
+                color: 'rgba(0, 0, 0, 0.1)',
+                width: 4,
+                offsetX: 2,
+                offsetY: 2
+            },
+            style: {
+                fontSize: '13px',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
+            },
+            formatter: function() {
+                return `<div style="padding: 8px;">
+                    <strong style="color: #8B4A47; font-size: 14px;">${this.point.name} Priority</strong><br>
+                    <span style="color: #666;">Count: <strong>${this.point.value}</strong></span><br>
+                    <span style="color: #666;">Percentage: <strong>${this.point.percentage.toFixed(1)}%</strong></span>
+                </div>`;
+            }
         },
         plotOptions: {
             treemap: {
                 layoutAlgorithm: 'squarified',
-                borderWidth: 3,
+                borderWidth: 2,
                 borderColor: '#FFFFFF',
-                borderRadius: 4,
+                borderRadius: 6,
                 dataLabels: {
                     enabled: true,
-                    format: '{point.name}<br><b>{point.value}</b>',
-                    style: {
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        color: '#FFFFFF',
-                        textOutline: '2px #000000'
+                    useHTML: true,
+                    formatter: function() {
+                        return `<div style="text-align: center; line-height: 1.1;">
+                            <div style="font-weight: 600; font-size: 11px; color: #5D3833; text-shadow: 1px 1px 2px rgba(255,255,255,0.3);">
+                                ${this.point.name}
+                            </div>
+                            <div style="font-weight: 700; font-size: 14px; color: #5D3833; text-shadow: 1px 1px 2px rgba(255,255,255,0.3);">
+                                ${this.point.value}
+                            </div>
+                        </div>`;
                     }
+                },
+                states: {
+                    hover: {
+                        brightness: 0.15,
+                        borderColor: '#333333',
+                        borderWidth: 3
+                    }
+                },
+                animation: {
+                    duration: 800
                 }
             }
         },
         series: [{
-            name: 'Cases',
+            name: 'Tickets',
             data: treeMapData.map((item) => {
                 const totalValue = treeMapData.reduce((sum, d) => sum + d.value, 0);
                 return {
                     ...item,
-                    percentage: totalValue > 0 ? (item.value / totalValue * 100) : 0
+                    percentage: totalValue > 0 ? (item.value / totalValue * 100) : 0,
+                    color: priorityColors[item.name] || '#D4A5A0' // fallback for unknown
                 };
             })
         }]
     });
 }
+
+
+// Pagination functions remain the same
 const rowsPerPage = 4;
 let currentPage = 1;
 let totalRows = 0;
@@ -681,6 +792,21 @@ function updatePagination() {
         }
     });
     document.getElementById('paginationInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+}
+
+function toggleDescription(element, event) {
+    event.preventDefault();
+    
+    const descriptionContent = element.closest('.description-content');
+    const fullText = descriptionContent.getAttribute('data-full-text');
+    const descriptionText = descriptionContent.querySelector('.description-text');
+    
+    if (element.textContent === 'See more') {
+        descriptionText.innerHTML = fullText + ' <a href="#" class="see-more-btn text-primary" onclick="toggleDescription(this, event)">See less</a>';
+    } else {
+        const truncatedText = fullText.length > 60 ? fullText.substring(0, 60) + '...' : fullText;
+        descriptionText.innerHTML = truncatedText + (fullText.length > 60 ? ' <a href="#" class="see-more-btn text-primary" onclick="toggleDescription(this, event)">See more</a>' : '');
+    }
 }
     </script>
     {% endblock %}
